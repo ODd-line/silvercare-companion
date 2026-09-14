@@ -1,180 +1,139 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useAccount } from '@/providers/account-provider';
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
+function PlannedDevice({ mark, title, description }: { mark: string; title: string; description: string }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeading}>
+        <View style={styles.deviceMark}><Text style={styles.deviceMarkText}>{mark}</Text></View>
+        <View style={styles.headingCopy}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          <Text style={styles.stateWaiting}>PLANNED - NOT PAIRED</Text>
+        </View>
+      </View>
+      <Text style={styles.body}>{description}</Text>
+      <View style={styles.integrationRow}>
+        <Text style={styles.integrationLabel}>Account setup</Text>
+        <Text style={styles.ready}>READY</Text>
+      </View>
+      <View style={styles.integrationRow}>
+        <Text style={styles.integrationLabel}>Hardware connection</Text>
+        <Text style={styles.pending}>NOT AVAILABLE</Text>
+      </View>
+      <View style={styles.disabledButton}>
+        <Text style={styles.disabledButtonText}>Pairing coming later</Text>
+      </View>
+    </View>
+  );
+}
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
+export default function DevicesScreen() {
+  const { profile, photoContacts, signOut, startProfileEdit } = useAccount();
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.eyebrow}>SILVERCARE</Text>
+          <Text style={styles.title}>Devices</Text>
+          <Text style={styles.intro}>Prepare the support profile now. Device pairing will be added alongside the hardware communication layer.</Text>
 
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
+          {profile?.predictive_insoles_enabled && (
+            <PlannedDevice
+              mark="G"
+              title="Predictive Gait Insoles"
+              description="Planned wearable sensors for recording walking-pattern indicators and longer-term mobility trends."
+            />
+          )}
+
+          {profile?.photo_dial_enabled && (
+            <PlannedDevice
+              mark="D"
+              title="Rotary Photo-Dial Communicator"
+              description={`Planned physical calling interface with ${photoContacts.length} ${photoContacts.length === 1 ? 'contact' : 'contacts'} assigned to dial positions.`}
+            />
+          )}
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeading}>
+              <View style={[styles.deviceMark, styles.accountMark]}><Text style={styles.deviceMarkText}>A</Text></View>
+              <View style={styles.headingCopy}>
+                <Text style={styles.sectionTitle}>Support profile</Text>
+                <Text style={styles.stateReady}>PRIVATE ACCOUNT DATA</Text>
+              </View>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Name</Text>
+              <Text style={styles.profileValue}>{profile?.full_name}</Text>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Mobility aid</Text>
+              <Text style={styles.profileValue}>{profile?.mobility_aid || 'None recorded'}</Text>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Mobility history</Text>
+              <Text style={styles.profileValue}>{profile?.fall_history || 'None recorded'}</Text>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Photo contacts</Text>
+              <Text style={styles.profileValue}>{photoContacts.length}</Text>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Allergies</Text>
+              <Text style={styles.profileValue}>{profile?.allergies.length ? profile.allergies.join(', ') : 'None recorded'}</Text>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Emergency contact</Text>
+              <Text style={styles.profileValue}>{profile?.emergency_contact_name || 'Not provided'}{profile?.emergency_contact_phone ? ` (${profile.emergency_contact_phone})` : ''}</Text>
+            </View>
+            <View style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Terms accepted</Text>
+              <Text style={styles.profileValue}>{profile ? `${profile.terms_version} on ${new Date(profile.terms_accepted_at).toLocaleDateString()}` : ''}</Text>
+            </View>
+            <Pressable accessibilityRole="button" onPress={startProfileEdit} style={({ pressed }) => [styles.editProfileButton, pressed && styles.pressed]}>
+              <Text style={styles.editProfileText}>Update support profile</Text>
             </Pressable>
-          </ExternalLink>
-        </ThemedView>
-
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+            <Pressable accessibilityRole="button" onPress={signOut} style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}>
+              <Text style={styles.signOutText}>Sign out</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-  },
+  screen: { flex: 1, backgroundColor: '#F4F6F1' },
+  safeArea: { flex: 1 },
+  content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 20, paddingBottom: 120, gap: 18 },
+  eyebrow: { color: '#116A58', fontSize: 12, fontWeight: '800', letterSpacing: 0 },
+  title: { color: '#17211E', fontSize: 38, lineHeight: 44, fontWeight: '800', letterSpacing: 0, marginTop: -14 },
+  intro: { color: '#59635F', fontSize: 16, lineHeight: 23, maxWidth: 560, marginTop: -8 },
+  section: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DED9', borderRadius: 8, padding: 18, gap: 11 },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
+  deviceMark: { width: 44, height: 44, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#116A58' },
+  accountMark: { backgroundColor: '#6B5145' },
+  deviceMarkText: { color: '#FFFFFF', fontSize: 19, fontWeight: '900' },
+  headingCopy: { flex: 1, gap: 2 },
+  sectionTitle: { color: '#17211E', fontSize: 20, fontWeight: '800', letterSpacing: 0 },
+  stateWaiting: { color: '#8A5A12', fontSize: 10, fontWeight: '800' },
+  stateReady: { color: '#0C775C', fontSize: 10, fontWeight: '800' },
+  body: { color: '#616A66', fontSize: 14, lineHeight: 21, marginBottom: 3 },
+  integrationRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#D9DED9', paddingTop: 11 },
+  integrationLabel: { color: '#48524E', fontSize: 14 },
+  ready: { color: '#0C775C', fontSize: 11, fontWeight: '900' },
+  pending: { color: '#9A6415', fontSize: 11, fontWeight: '900' },
+  disabledButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E7EAE6', borderRadius: 6, marginTop: 3 },
+  disabledButtonText: { color: '#747C78', fontSize: 14, fontWeight: '800' },
+  profileRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#D9DED9', paddingTop: 11 },
+  profileLabel: { color: '#69716D', fontSize: 13, fontWeight: '700' },
+  profileValue: { flex: 1, color: '#25312D', fontSize: 13, fontWeight: '600', textAlign: 'right' },
+  editProfileButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: '#116A58', borderRadius: 6, marginTop: 4 },
+  editProfileText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  signOutButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#A33827', borderRadius: 6, marginTop: 4 },
+  signOutText: { color: '#A33827', fontSize: 14, fontWeight: '800' },
+  pressed: { opacity: 0.72 },
 });
