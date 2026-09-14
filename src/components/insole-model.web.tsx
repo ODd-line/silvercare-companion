@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import * as THREE from 'three';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 
@@ -131,6 +131,8 @@ function disposeProduct(product: THREE.Object3D) {
 }
 
 export function InsoleModel() {
+  const { width } = useWindowDimensions();
+  const compact = width < 600;
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rotationRef = useRef({ x: -0.72, y: 0, z: -0.08 });
   const [view, setView] = useState<ModelView>('systems');
@@ -160,6 +162,8 @@ export function InsoleModel() {
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
     mount.appendChild(renderer.domElement);
 
     scene.add(new THREE.HemisphereLight(0xf7fbf7, 0x587069, 2.1));
@@ -215,6 +219,7 @@ export function InsoleModel() {
     };
     const observer = new ResizeObserver(resize);
     observer.observe(mount);
+    globalThis.addEventListener('resize', resize);
     resize();
 
     let frame = 0;
@@ -227,6 +232,7 @@ export function InsoleModel() {
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      globalThis.removeEventListener('resize', resize);
       canvas.removeEventListener('pointerdown', pointerDown);
       canvas.removeEventListener('pointermove', pointerMove);
       canvas.removeEventListener('pointerup', pointerUp);
@@ -244,12 +250,12 @@ export function InsoleModel() {
 
   return (
     <View style={styles.section}>
-      <View style={styles.headingRow}>
+      <View style={[styles.headingRow, compact && styles.headingRowCompact]}>
         <View style={styles.headingCopy}>
           <Text style={styles.eyebrow}>3D SYSTEM CONCEPT</Text>
           <Text style={styles.title}>How the insoles work</Text>
         </View>
-        <View style={styles.actions}>
+        <View style={[styles.actions, compact && styles.actionsCompact]}>
           {stlUrl && (
             <a
               aria-label="Export concept STL"
@@ -272,7 +278,7 @@ export function InsoleModel() {
           <Text style={[styles.segmentText, view === 'pressure' && styles.segmentTextActive]}>Pressure zones</Text>
         </Pressable>
       </View>
-      <div ref={mountRef} style={{ width: '100%', height: '440px', touchAction: 'none', cursor: 'grab' }} aria-label="Interactive 3D model of predictive gait insoles" />
+      <div ref={mountRef} style={{ width: '100%', height: 'clamp(360px, 45vw, 480px)', touchAction: 'none', cursor: 'grab' }} aria-label="Interactive 3D model of predictive gait insoles" />
       <Text style={styles.dragHint}>Drag the model to inspect the layered sensor layout.</Text>
       <View style={styles.legend}>
         <View style={styles.legendItem}><View style={[styles.swatch, styles.pressureSwatch]} /><Text style={styles.legendText}>4 pressure zones per foot</Text></View>
@@ -288,8 +294,10 @@ export function InsoleModel() {
 const styles = StyleSheet.create({
   section: { width: '100%', marginTop: 12, marginBottom: 8 },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 },
+  headingRowCompact: { flexDirection: 'column', gap: 12 },
   headingCopy: { flex: 1, gap: 4 },
   actions: { alignItems: 'flex-end', gap: 7 },
+  actionsCompact: { width: '100%', flexDirection: 'row', alignItems: 'center' },
   eyebrow: { color: '#116A58', fontSize: 11, fontWeight: '900', letterSpacing: 0 },
   title: { color: '#17211E', fontSize: 25, lineHeight: 31, fontWeight: '900', letterSpacing: 0 },
   resetButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: '#AAB5AF', borderRadius: 6 },

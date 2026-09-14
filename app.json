@@ -11,7 +11,8 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.iena.silvercare",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "SilverCare connects to your medicine box on its local Wi-Fi network.",
+        "NSBluetoothAlwaysUsageDescription": "SilverCare uses Bluetooth to discover and connect to your Mastro watch and predictive gait insoles.",
+        "NSLocalNetworkUsageDescription": "SilverCare connects to supported care devices on your local network.",
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -34,6 +35,7 @@
     },
     "plugins": [
       "expo-router",
+      "react-native-ble-plx",
       [
         "expo-splash-screen",
         {

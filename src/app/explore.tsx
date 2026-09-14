@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BluetoothPairingPanel } from '@/components/bluetooth-pairing-panel';
 import { InsoleModel } from '@/components/insole-model';
 import { createWatchSnapshot, WATCH_CAPABILITIES, WATCH_PROTOCOL_VERSION, WATCH_TRANSPORT_GAPS } from '@/lib/watch-integration';
 import { useAccount } from '@/providers/account-provider';
@@ -12,7 +13,7 @@ function PlannedDevice({ mark, title, description }: { mark: string; title: stri
         <View style={styles.deviceMark}><Text style={styles.deviceMarkText}>{mark}</Text></View>
         <View style={styles.headingCopy}>
           <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.stateWaiting}>PLANNED - NOT PAIRED</Text>
+          <Text style={styles.stateWaiting}>PROTOTYPE HARDWARE</Text>
         </View>
       </View>
       <Text style={styles.body}>{description}</Text>
@@ -21,17 +22,19 @@ function PlannedDevice({ mark, title, description }: { mark: string; title: stri
         <Text style={styles.ready}>READY</Text>
       </View>
       <View style={styles.integrationRow}>
-        <Text style={styles.integrationLabel}>Hardware connection</Text>
-        <Text style={styles.pending}>NOT AVAILABLE</Text>
+        <Text style={styles.integrationLabel}>Bluetooth profile</Text>
+        <Text style={styles.ready}>READY</Text>
       </View>
       <View style={styles.disabledButton}>
-        <Text style={styles.disabledButtonText}>Pairing coming later</Text>
+        <Text style={styles.disabledButtonText}>Use Bluetooth scan above</Text>
       </View>
     </View>
   );
 }
 
 export default function DevicesScreen() {
+  const { width } = useWindowDimensions();
+  const desktop = width >= 820;
   const { demoMode, profile, photoContacts, signOut, startProfileEdit } = useAccount();
   const watchSnapshot = createWatchSnapshot(
     profile?.full_name ?? '',
@@ -44,30 +47,45 @@ export default function DevicesScreen() {
     <View style={styles.screen}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.eyebrow}>SILVERCARE</Text>
-          <Text style={styles.title}>Devices</Text>
-          <Text style={styles.intro}>Prepare the support profile now. Device pairing will be added alongside the hardware communication layer.</Text>
+          <View style={[styles.pageHeader, !desktop && styles.pageHeaderCompact]}>
+            <View style={styles.headerCopy}>
+              <Text style={styles.eyebrow}>SILVERCARE SYSTEM</Text>
+              <Text style={styles.title}>Devices and prototypes</Text>
+              <Text style={styles.intro}>Pair supported hardware, inspect the gait-insole architecture, and review what is ready on the Mastro watch.</Text>
+            </View>
+            <View style={[styles.headerStatus, !desktop && styles.headerStatusCompact]}>
+              <View style={styles.statusDot} />
+              <Text style={styles.headerStatusText}>{demoMode ? 'Demo workspace' : 'Setup workspace'}</Text>
+            </View>
+          </View>
 
-          {profile?.predictive_insoles_enabled && (
-            <>
+          <BluetoothPairingPanel />
+
+          <View style={[styles.grid, desktop && styles.gridDesktop]}>
+            {profile?.predictive_insoles_enabled && (
+              <View style={styles.gridItem}>
               <PlannedDevice
                 mark="G"
                 title="Predictive Gait Insoles"
                 description="Planned wearable sensors for recording walking-pattern indicators and longer-term mobility trends."
               />
-              <InsoleModel />
-            </>
-          )}
+              </View>
+            )}
+            {profile?.photo_dial_enabled && (
+              <View style={styles.gridItem}>
+                <PlannedDevice
+                  mark="D"
+                  title="Rotary Photo-Dial Communicator"
+                  description={`Planned physical calling interface with ${photoContacts.length} ${photoContacts.length === 1 ? 'contact' : 'contacts'} assigned to dial positions.`}
+                />
+              </View>
+            )}
+          </View>
 
-          {profile?.photo_dial_enabled && (
-            <PlannedDevice
-              mark="D"
-              title="Rotary Photo-Dial Communicator"
-              description={`Planned physical calling interface with ${photoContacts.length} ${photoContacts.length === 1 ? 'contact' : 'contacts'} assigned to dial positions.`}
-            />
-          )}
+          {profile?.predictive_insoles_enabled && <InsoleModel />}
 
-          <View style={styles.section}>
+          <View style={[styles.grid, desktop && styles.gridDesktop]}>
+          <View style={[styles.section, styles.gridItem]}>
             <View style={styles.sectionHeading}>
               <View style={[styles.deviceMark, styles.watchMark]}><Text style={styles.deviceMarkText}>W</Text></View>
               <View style={styles.headingCopy}>
@@ -101,7 +119,7 @@ export default function DevicesScreen() {
             )}
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, styles.gridItem]}>
             <View style={styles.sectionHeading}>
               <View style={[styles.deviceMark, styles.accountMark]}><Text style={styles.deviceMarkText}>A</Text></View>
               <View style={styles.headingCopy}>
@@ -144,6 +162,7 @@ export default function DevicesScreen() {
               <Text style={styles.signOutText}>Sign out</Text>
             </Pressable>
           </View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -153,11 +172,21 @@ export default function DevicesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6F1' },
   safeArea: { flex: 1 },
-  content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 20, paddingBottom: 120, gap: 18 },
+  content: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 20, paddingBottom: 120, gap: 20 },
+  pageHeader: { minHeight: 132, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, borderBottomWidth: 1, borderBottomColor: '#D5DDD8', paddingVertical: 12 },
+  pageHeaderCompact: { minHeight: 0, flexDirection: 'column', gap: 12 },
+  headerCopy: { flex: 1, maxWidth: 680, gap: 5 },
   eyebrow: { color: '#116A58', fontSize: 12, fontWeight: '800', letterSpacing: 0 },
-  title: { color: '#17211E', fontSize: 38, lineHeight: 44, fontWeight: '800', letterSpacing: 0, marginTop: -14 },
-  intro: { color: '#59635F', fontSize: 16, lineHeight: 23, maxWidth: 560, marginTop: -8 },
-  section: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DED9', borderRadius: 8, padding: 18, gap: 11 },
+  title: { color: '#17211E', fontSize: 34, lineHeight: 40, fontWeight: '800', letterSpacing: 0 },
+  intro: { color: '#59635F', fontSize: 15, lineHeight: 22, maxWidth: 620 },
+  headerStatus: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 17, backgroundColor: '#E5ECE8', paddingHorizontal: 12, marginTop: 3 },
+  headerStatusCompact: { alignSelf: 'flex-start', marginTop: 0 },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#B87520' },
+  headerStatusText: { color: '#52625C', fontSize: 12, fontWeight: '800' },
+  grid: { width: '100%', gap: 16 },
+  gridDesktop: { flexDirection: 'row', alignItems: 'stretch' },
+  gridItem: { flex: 1, minWidth: 0 },
+  section: { flex: 1, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DED9', borderRadius: 8, padding: 18, gap: 11 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
   deviceMark: { width: 44, height: 44, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#116A58' },
   watchMark: { backgroundColor: '#285D78' },

@@ -13,6 +13,7 @@ Cross-platform Expo application for two planned SilverCare products: Predictive 
 - Honest pre-hardware states for pairing and gait readings
 - Interactive Three.js system model showing insole layers, pressure zones, motion sensors, controller, and battery placement
 - Versioned Mastro OS companion payload for future authenticated watch transport
+- Native iOS/Android BLE discovery and connection through `react-native-ble-plx`
 
 Hardware pairing, sensor ingestion, gait analysis, and communicator calling are not implemented yet.
 
@@ -20,7 +21,14 @@ Hardware pairing, sensor ingestion, gait analysis, and communicator calling are 
 
 Mastro OS already contains a native SilverCare screen, local wearer check-ins, a possible-collapse evidence evaluator, and Wi-Fi support. The app defines companion payload version 1 in `src/lib/watch-integration.ts` so both products have an explicit data boundary.
 
-The current integration is intentionally local-only. Bluetooth pairing, an authenticated Wi-Fi endpoint, account enrollment, gait-sensor ingestion, and remote check-in delivery still require implementation and hardware validation. The demo shows the payload shape but does not claim a physical watch connection.
+The native app scans for the SilverCare GATT service, connects, discovers services, and reads the readiness characteristic. iOS and Android permissions are configured through the `react-native-ble-plx` Expo plugin. Because Expo Go cannot load this custom native module, use a development build for physical BLE testing. The web preview provides clearly labeled simulated devices.
+
+The BLE identifiers are:
+
+- Service: `7c9a1000-6f52-4f18-a3d1-8f3d3a79c001`
+- Readiness snapshot: `7c9a1001-6f52-4f18-a3d1-8f3d3a79c001`
+
+Authenticated account enrollment, private gait-data transfer, commands, and remote check-in delivery still require implementation and hardware validation. A successful BLE connection must not be presented as medical monitoring or guaranteed message delivery.
 
 ## Predictive gait insole concept
 
@@ -69,6 +77,16 @@ corepack pnpm ios
 corepack pnpm android
 corepack pnpm web
 ```
+
+Physical Bluetooth requires a native development build because Expo Go does not include `react-native-ble-plx`:
+
+```bash
+corepack pnpm exec expo prebuild
+corepack pnpm exec expo run:ios
+# or: corepack pnpm exec expo run:android
+```
+
+The web build keeps the same pairing workflow with clearly labeled simulated devices. It never reports the browser demo as a physical BLE connection.
 
 Validation:
 
