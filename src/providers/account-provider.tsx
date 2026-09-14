@@ -1,6 +1,6 @@
 import { Session } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
-import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { createContext, PropsWithChildren, useContext, useEffect, useRef, useState } from 'react';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -97,6 +97,7 @@ const DEMO_CONTACTS: PhotoContact[] = [
 export function AccountProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [demoMode, setDemoMode] = useState(false);
+  const demoModeRef = useRef(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [photoContacts, setPhotoContacts] = useState<PhotoContact[]>([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
@@ -139,7 +140,7 @@ export function AccountProvider({ children }: PropsWithChildren) {
 
     const { data: authListener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      if (!nextSession) {
+      if (!nextSession && !demoModeRef.current) {
         setProfile(null);
         setPhotoContacts([]);
       }
@@ -177,6 +178,7 @@ export function AccountProvider({ children }: PropsWithChildren) {
   const startDemo = () => {
     setError(null);
     setNotice(null);
+    demoModeRef.current = true;
     setDemoMode(true);
     setProfile(DEMO_PROFILE);
     setPhotoContacts(DEMO_CONTACTS);
@@ -200,6 +202,7 @@ export function AccountProvider({ children }: PropsWithChildren) {
 
   const signOut = async () => {
     if (demoMode) {
+      demoModeRef.current = false;
       setDemoMode(false);
       setProfile(null);
       setPhotoContacts([]);

@@ -11,8 +11,31 @@ Cross-platform Expo application for two planned SilverCare products: Predictive 
 - Up to eight ordered photo-dial contacts
 - Per-user database isolation through Postgres Row Level Security (RLS)
 - Honest pre-hardware states for pairing and gait readings
+- Interactive Three.js system model showing insole layers, pressure zones, motion sensors, controller, and battery placement
+- Versioned Mastro OS companion payload for future authenticated watch transport
 
 Hardware pairing, sensor ingestion, gait analysis, and communicator calling are not implemented yet.
+
+## Watch integration
+
+Mastro OS already contains a native SilverCare screen, local wearer check-ins, a possible-collapse evidence evaluator, and Wi-Fi support. The app defines companion payload version 1 in `src/lib/watch-integration.ts` so both products have an explicit data boundary.
+
+The current integration is intentionally local-only. Bluetooth pairing, an authenticated Wi-Fi endpoint, account enrollment, gait-sensor ingestion, and remote check-in delivery still require implementation and hardware validation. The demo shows the payload shape but does not claim a physical watch connection.
+
+## Predictive gait insole concept
+
+The Devices screen includes an interactive 3D system concept with:
+
+- Four pressure zones under the toe, forefoot, midfoot, and heel of each foot
+- A six-axis motion sensor near the arch
+- A heel controller and radio module
+- A separate rechargeable battery zone
+- Routed sensor traces within a layered insole shell
+- An STL export of the generated left/right concept pair
+
+The nominal concept length is about 235 mm per insole. Three.js geometry units are treated as millimetres by the STL export. The geometry is intended to communicate architecture and component placement, not to fit a foot or go directly to manufacture.
+
+This is concept geometry, not production CAD or a clinically validated sensor layout. Footwear fit, flex life, calibration, battery protection, charging, ingress resistance, thermal behavior, biocompatibility, and manufacturability require physical prototypes and specialist review.
 
 ## Database setup
 
