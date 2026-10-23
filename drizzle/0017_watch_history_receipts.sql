@@ -1,0 +1,1 @@
+CREATE INDEX `care_measure_receipt_owner` ON `care_measurements` (`user_id`,`external_id`,`timestamp_source`);

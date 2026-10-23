@@ -1,0 +1,1 @@
+ALTER TABLE `care_measurements` ADD `timestamp_source` text DEFAULT 'unknown' NOT NULL;

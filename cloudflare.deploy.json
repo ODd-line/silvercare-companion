@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "silver-bank",
+  "account_id": "fcfd7d74824736ac8352030d3de86a83",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "silver-bank-db",
+      "database_id": "fc156a75-a646-477d-9475-ddc420af3702",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}
