@@ -1,11 +1,11 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { DefaultTheme, ThemeProvider } from 'expo-router';
 
 import { AuthScreen } from '@/components/account/auth-screen';
 import { LoadingScreen } from '@/components/account/loading-screen';
 import { ProductOnboardingScreen } from '@/components/account/product-onboarding-screen';
 import AppTabs from '@/components/app-tabs';
 import { AccountProvider, TERMS_VERSION, useAccount } from '@/providers/account-provider';
+import { TimeBankProvider } from '@/providers/time-bank-provider';
 
 function AccountGate() {
   const { session, demoMode, profile, loading, editingProfile } = useAccount();
@@ -20,12 +20,20 @@ function AccountGate() {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <AccountProvider>
-        <AccountGate />
+        <MemberWorkspace />
       </AccountProvider>
     </ThemeProvider>
+  );
+}
+
+function MemberWorkspace() {
+  const { session, demoMode } = useAccount();
+  return (
+    <TimeBankProvider key={demoMode ? 'demo' : session?.user.id ?? 'signed-out'}>
+      <AccountGate />
+    </TimeBankProvider>
   );
 }

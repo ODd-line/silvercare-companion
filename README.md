@@ -1,69 +1,59 @@
-# SilverCare Companion App
+# Silver Bank Companion
 
-Cross-platform Expo application for two planned SilverCare products: Predictive Gait Insoles and the Rotary Photo-Dial Communicator. The app supports iOS, Android, and web from one TypeScript codebase.
+An Expo companion app for a community Time Bank linked to the Mastro watch. Members exchange time at an equal rate: one hour of help earns one hour of credit.
 
-## Current features
+## Product flow
 
-- Email account creation and sign-in through Supabase Auth
-- Mandatory first-run support profile and versioned consent flow
-- Personal details, emergency contact, mobility context, allergies, and caregiver notes
-- Product preferences for gait insoles and the photo-dial communicator
-- Up to eight ordered photo-dial contacts
-- Per-user database isolation through Postgres Row Level Security (RLS)
-- Honest pre-hardware states for pairing and gait readings
-- Interactive Three.js system model showing insole layers, pressure zones, motion sensors, controller, and battery placement
-- Versioned Mastro OS companion payload for future authenticated watch transport
-- Native iOS/Android BLE discovery and connection through `react-native-ble-plx`
+1. A member signs in and joins a trusted local circle.
+2. **Community** lists requests from other members. A member can offer time or post a request that reserves available credit.
+3. Accepted work appears in **Home** as the next scheduled task.
+4. The phone or watch records start, finish, and confirmation actions.
+5. The authenticated service validates each state transition and idempotency key.
+6. Only after the required confirmations does the production service post an immutable entry in **My Time** and return a new confirmed balance.
 
-Hardware pairing, sensor ingestion, gait analysis, and communicator calling are not implemented yet.
+The watch is a convenient remote, not a bank. It may cache actions while offline, but it cannot create credits, settle disputes, approve members, or calculate the authoritative balance.
+
+## App structure
+
+- **Home**: pending confirmations, next task, available time, and direct shortcuts.
+- **Community**: category-filtered requests, a validated request form, and My exchanges.
+- **My Time**: available time (confirmed minus reservations), reserved requests, and completed transfers.
+- **Watch**: Mastro pairing, connection state, and the watch-to-phone-to-service contract.
+
+Task details open from Home, Community, and new time records. On phones, the browser navigation sits at the bottom; wider browsers use top navigation. Account settings are accessible from every screen. The member workspace deliberately uses a consistent light theme until a complete dark theme is available.
+
+The Time Bank workspace currently uses an in-memory demo model on every platform, even when account authentication is configured. A visible notice distinguishes this from a live service. Data resets when the app restarts or the account changes; nothing is submitted to a production Time Bank. Drafts remain while switching Community sections but are not saved across restarts.
+
+Posting a request validates its future local date/time and a duration of 15–240 minutes in 15-minute steps, then reserves available time. Cancelling an open request releases that hold. Accepting a task updates the shared schedule. Starting and finishing move it to confirmation. Both the member confirmation and an explicitly labelled simulated partner confirmation are required before posting exactly one signed time entry. Helping earns time; receiving help spends time and releases the reservation. Demo helper acceptance and partner confirmation buttons never contact another member.
+
+Messaging, rescheduling, disputes, reminders, cross-device persistence, and production transfers are not yet implemented. The demo must not be used as a real community ledger.
 
 ## Watch integration
 
-Mastro OS already contains a native SilverCare screen, local wearer check-ins, a possible-collapse evidence evaluator, and Wi-Fi support. The app defines companion payload version 1 in `src/lib/watch-integration.ts` so both products have an explicit data boundary.
+The native app uses `react-native-ble-plx` to scan for and connect to the encrypted Mastro GATT service. Web builds expose a clearly labelled simulated watch.
 
-The native app scans for the SilverCare GATT service, connects, discovers services, and reads the readiness characteristic. iOS and Android permissions are configured through the `react-native-ble-plx` Expo plugin. Because Expo Go cannot load this custom native module, use a development build for physical BLE testing. The web preview provides clearly labeled simulated devices.
-
-The BLE identifiers are:
+Current BLE identifiers:
 
 - Service: `7c9a1000-6f52-4f18-a3d1-8f3d3a79c001`
-- Readiness snapshot: `7c9a1001-6f52-4f18-a3d1-8f3d3a79c001`
+- Snapshot: `7c9a1001-6f52-4f18-a3d1-8f3d3a79c001`
+- Commands: `7c9a1002-6f52-4f18-a3d1-8f3d3a79c001`
 
-Authenticated account enrollment, private gait-data transfer, commands, and remote check-in delivery still require implementation and hardware validation. A successful BLE connection must not be presented as medical monitoring or guaranteed message delivery.
+BLE discovery and connection are implemented. The production Time Bank snapshot/action packet contract is the next integration step; the current firmware characteristics still carry the earlier prototype payloads. The UI therefore never claims that a watch action has reached the server.
 
-## Predictive gait insole concept
+## Production authority model
 
-The Devices screen includes an interactive 3D system concept with:
+The backend must own:
 
-- Four pressure zones under the toe, forefoot, midfoot, and heel of each foot
-- A six-axis motion sensor near the arch
-- A heel controller and radio module
-- A separate rechargeable battery zone
-- Routed sensor traces within a layered insole shell
-- An STL export of the generated left/right concept pair
+- membership and trusted-circle permissions;
+- task creation, acceptance, readiness, start, and completion transitions;
+- integer-second reservations and balance conservation;
+- two-party confirmation and dispute freezes;
+- idempotent watch and phone action processing;
+- immutable ledger and audit records.
 
-The nominal concept length is about 235 mm per insole. Three.js geometry units are treated as millimetres by the STL export. The geometry is intended to communicate architecture and component placement, not to fit a foot or go directly to manufacture.
+The current Supabase schema is inherited from an earlier prototype and is not a production Time Bank schema. Before deployment, replace it with task, participation, reservation, ledger, device-enrollment, and action-outbox tables protected by row-level security and server-side transaction functions.
 
-This is concept geometry, not production CAD or a clinically validated sensor layout. Footwear fit, flex life, calibration, battery protection, charging, ingress resistance, thermal behavior, biocompatibility, and manufacturability require physical prototypes and specialist review.
-
-## Database setup
-
-1. Create a project at [Supabase](https://supabase.com/dashboard).
-2. Open the project's SQL Editor.
-3. For a new database, run these migrations in order:
-   - `supabase/migrations/20260906000000_initial_user_health_data.sql`
-   - `supabase/migrations/20260913000000_gait_insoles_photo_dial.sql`
-4. If the original medicine-box migration is already installed, run only `20260913000000_gait_insoles_photo_dial.sql`. It removes the obsolete medication table and adds the new product schema.
-5. In Supabase Authentication settings, configure email confirmation and allowed redirect URLs for the deployment environment.
-6. Create `.env.local` from `.env.example` and fill in the project URL and public publishable or anon key:
-
-```dotenv
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-public-key
-```
-
-The public key is intended for client applications and relies on the migrations' RLS policies. Never put a Supabase secret or service-role key in an `EXPO_PUBLIC_` variable.
-
-## Install and run
+## Run
 
 ```bash
 corepack pnpm install
@@ -78,35 +68,19 @@ corepack pnpm android
 corepack pnpm web
 ```
 
-Physical Bluetooth requires a native development build because Expo Go does not include `react-native-ble-plx`:
+Physical Bluetooth requires a native development build:
 
 ```bash
 corepack pnpm exec expo prebuild
 corepack pnpm exec expo run:ios
-# or: corepack pnpm exec expo run:android
+# or
+corepack pnpm exec expo run:android
 ```
 
-The web build keeps the same pairing workflow with clearly labeled simulated devices. It never reports the browser demo as a physical BLE connection.
-
-Validation:
+## Validation
 
 ```bash
 corepack pnpm exec tsc --noEmit
 corepack pnpm lint
-corepack pnpm exec expo install --check
+corepack pnpm test:time-bank
 ```
-
-## Data model
-
-- `profiles` stores one support profile per authenticated user, including mobility context and product preferences.
-- `photo_contacts` stores up to eight ordered contacts for the rotary dial.
-- `connected_devices` reserves per-user device identity and pairing metadata.
-- `gait_readings` stores timestamped gait indicators for the owning user to read.
-
-The `complete_product_onboarding` database function saves the profile, consent, and photo contacts in one transaction. Exposed tables use RLS based on `auth.uid()`, and anonymous table access is revoked.
-
-## Product boundaries
-
-SilverCare is a student prototype, not a certified medical device, diagnostic tool, fall-prevention guarantee, or emergency service. Gait indicators may support review of walking trends but cannot diagnose a condition or predict a fall with certainty. Photo-dial calls depend on correct setup, power, network coverage, phone services, and the recipient answering.
-
-The included terms and consent language is prototype product copy, not legal advice. Before handling real health data, obtain legal and clinical review and complete the security, privacy, retention, deletion, breach-response, accessibility, and regulatory work required in every deployment jurisdiction. Supabase configuration and RLS alone do not establish health-data compliance.

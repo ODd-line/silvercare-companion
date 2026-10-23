@@ -28,12 +28,13 @@ export const WATCH_CAPABILITIES = [
   'Native SilverCare watch screen',
   'Local wearer check-ins',
   'Possible-collapse evidence evaluator',
-  'Wi-Fi hardware and credential storage',
+  'Encrypted BLE health-event transport',
+  'Authenticated, idempotent health storage',
 ] as const;
 
 export const WATCH_TRANSPORT_GAPS = [
-  'Authenticated phone-to-watch transport',
-  'Sensor ingestion from gait insoles',
+  'Verified PPG and gait sensor drivers',
+  'Physical-device reconnect validation',
   'Remote check-in delivery',
 ] as const;
 

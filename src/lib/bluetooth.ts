@@ -5,12 +5,16 @@ import {
   BluetoothAdapter,
   BluetoothDeviceRecord,
   SILVERCARE_BLE_SERVICE_UUID,
+  SILVERCARE_COMMAND_CHARACTERISTIC_UUID,
+  SILVERCARE_HEALTH_TELEMETRY_CHARACTERISTIC_UUID,
   SILVERCARE_SNAPSHOT_CHARACTERISTIC_UUID,
 } from './bluetooth-contract';
+import { decodeBase64HealthTelemetry, encodeHealthAcknowledgementBase64 } from './health-telemetry';
 
 export {
   SILVERCARE_BLE_SERVICE_UUID,
   SILVERCARE_COMMAND_CHARACTERISTIC_UUID,
+  SILVERCARE_HEALTH_TELEMETRY_CHARACTERISTIC_UUID,
   SILVERCARE_SNAPSHOT_CHARACTERISTIC_UUID,
 } from './bluetooth-contract';
 export type { BluetoothAdapter, BluetoothDeviceRecord } from './bluetooth-contract';
@@ -84,6 +88,34 @@ export function createBluetoothAdapter(): BluetoothAdapter {
         SILVERCARE_SNAPSHOT_CHARACTERISTIC_UUID,
       );
       return toRecord(readyDevice, true);
+    },
+    monitorHealth: (id, onEvent, onError) => {
+      const subscription = manager.monitorCharacteristicForDevice(
+        id,
+        SILVERCARE_BLE_SERVICE_UUID,
+        SILVERCARE_HEALTH_TELEMETRY_CHARACTERISTIC_UUID,
+        (error, characteristic) => {
+          if (error) {
+            onError(error.message || 'Health telemetry connection failed.');
+            return;
+          }
+          if (!characteristic?.value) return;
+          try {
+            onEvent(decodeBase64HealthTelemetry(characteristic.value));
+          } catch (decodeError) {
+            onError(decodeError instanceof Error ? decodeError.message : 'Invalid health telemetry packet.');
+          }
+        },
+      );
+      return () => subscription.remove();
+    },
+    acknowledgeHealth: async (id, event) => {
+      await manager.writeCharacteristicWithResponseForDevice(
+        id,
+        SILVERCARE_BLE_SERVICE_UUID,
+        SILVERCARE_COMMAND_CHARACTERISTIC_UUID,
+        encodeHealthAcknowledgementBase64(event),
+      );
     },
     disconnect: async (id) => {
       await manager.cancelDeviceConnection(id);

@@ -30,6 +30,8 @@ export function createBluetoothAdapter(): BluetoothAdapter {
       if (!device) throw new Error('Demo device was not found.');
       return { ...device, connected: true };
     },
+    monitorHealth: () => () => undefined,
+    acknowledgeHealth: async () => undefined,
     disconnect: async () => undefined,
     destroy: clearTimers,
   };
@@ -38,6 +40,7 @@ export function createBluetoothAdapter(): BluetoothAdapter {
 export {
   SILVERCARE_BLE_SERVICE_UUID,
   SILVERCARE_COMMAND_CHARACTERISTIC_UUID,
+  SILVERCARE_HEALTH_TELEMETRY_CHARACTERISTIC_UUID,
   SILVERCARE_SNAPSHOT_CHARACTERISTIC_UUID,
 } from './bluetooth-contract';
 export type { BluetoothAdapter, BluetoothDeviceRecord } from './bluetooth-contract';

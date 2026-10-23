@@ -1,31 +1,31 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
+import { palette } from '@/components/member-ui';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
     <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      backgroundColor={palette.paper}
+      tintColor={palette.blue}
+      indicatorColor={palette.paleBlue}
+      labelStyle={{ color: palette.muted, selected: { color: palette.blue } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="exchange">
+        <NativeTabs.Trigger.Label>Community</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person.2" md="people" />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="ledger">
+        <NativeTabs.Trigger.Label>My Time</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="clock" md="schedule" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Devices</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
+        <NativeTabs.Trigger.Label>Watch</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="applewatch" md="watch" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

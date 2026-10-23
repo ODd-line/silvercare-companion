@@ -1,137 +1,66 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { ActionButton, DemoNotice, MemberHeader, MemberPage, palette, TaskCard, TaskDetails, ui } from '@/components/member-ui';
 import { useAccount } from '@/providers/account-provider';
+import { formatDuration, useTimeBank } from '@/providers/time-bank-provider';
 
-export default function TodayScreen() {
-  const { profile, photoContacts } = useAccount();
-  const firstName = profile?.full_name.split(' ')[0] || 'there';
+export default function HomeScreen() {
+  const router = useRouter();
+  const { profile } = useAccount();
+  const { availableSeconds, reservedSeconds, tasks, watchConnected } = useTimeBank();
+  const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const name = profile?.full_name.trim().split(/\s+/)[0] || 'Member';
+  const pending = tasks.filter((task) => task.state === 'awaiting-confirmation' && !task.memberConfirmed);
+  const scheduled = tasks.filter((task) => ['accepted', 'in-progress'].includes(task.state))
+    .sort((a, b) => Number(b.state === 'in-progress') - Number(a.state === 'in-progress') || Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  const waiting = tasks.filter((task) => task.state === 'awaiting-confirmation' && task.memberConfirmed);
 
   return (
-    <View style={styles.screen}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.eyebrow}>SILVERCARE</Text>
-              <Text style={styles.title}>Hello, {firstName}</Text>
-            </View>
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Setup stage</Text>
-            </View>
-          </View>
-
-          {profile?.predictive_insoles_enabled && (
-            <View style={styles.heroPanel}>
-              <Text style={styles.heroLabel}>PREDICTIVE GAIT INSOLES</Text>
-              <Text style={styles.heroTitle}>Your walking baseline will appear here</Text>
-              <Text style={styles.heroBody}>Once paired, the insoles can contribute cadence, symmetry, and stride-variation trends for you and your caregiver to review.</Text>
-              <View style={styles.notReadyRow}>
-                <View style={styles.notReadyDot} />
-                <Text style={styles.notReadyText}>Hardware pairing is not available yet</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Mobility overview</Text>
-            <Text style={styles.sectionMeta}>No readings yet</Text>
-          </View>
-          <View style={styles.metricGrid}>
-            <View style={styles.metric}>
-              <Text style={styles.metricLabel}>CADENCE</Text>
-              <Text style={styles.metricValue}>--</Text>
-              <Text style={styles.metricUnit}>steps/min</Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.metricLabel}>SYMMETRY</Text>
-              <Text style={styles.metricValue}>--</Text>
-              <Text style={styles.metricUnit}>percent</Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.metricLabel}>VARIABILITY</Text>
-              <Text style={styles.metricValue}>--</Text>
-              <Text style={styles.metricUnit}>trend</Text>
-            </View>
-          </View>
-          <Text style={styles.contextNote}>These indicators describe trends only. They do not diagnose a condition or predict a fall with certainty.</Text>
-
-          {profile?.photo_dial_enabled && (
-            <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Photo dial</Text>
-                <Text style={styles.sectionMeta}>{photoContacts.length} {photoContacts.length === 1 ? 'contact' : 'contacts'}</Text>
-              </View>
-              <View style={styles.contactList}>
-                {photoContacts.map((contact) => (
-                  <View key={contact.id ?? contact.dial_position} style={styles.contactRow}>
-                    <View style={styles.dialPosition}><Text style={styles.dialPositionText}>{contact.dial_position}</Text></View>
-                    <View style={styles.contactCopy}>
-                      <Text style={styles.contactName}>{contact.name}</Text>
-                      <Text style={styles.contactDetail}>{contact.relationship || contact.phone}</Text>
-                    </View>
-                    <Text style={styles.contactState}>PLANNED</Text>
-                  </View>
-                ))}
-                {!photoContacts.length && (
-                  <View style={styles.emptyRow}>
-                    <Text style={styles.emptyTitle}>No contacts assigned</Text>
-                    <Text style={styles.emptyBody}>Add contact positions from your support profile.</Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
-
-          <View style={styles.notice}>
-            <Text style={styles.noticeTitle}>For urgent help</Text>
-            <Text style={styles.noticeBody}>Contact local emergency services directly. Do not wait for an app alert or photo-dial call.</Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    <MemberPage>
+      <MemberHeader title={`${greeting}, ${name}`} subtitle={new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })} />
+      <DemoNotice />
+      {pending.length > 0 && <View style={ui.attention}>
+        <Text accessibilityRole="header" style={ui.heading}>Your confirmation is needed</Text>
+        <Text style={ui.body}>{pending[0].title}{pending.length > 1 ? ` and ${pending.length - 1} more` : ''}. Review the agreed time before confirming.</Text>
+        <ActionButton label="Review time" onPress={() => setSelectedTask(pending[0].id)} />
+      </View>}
+      <Text accessibilityRole="header" style={ui.heading}>{scheduled[0]?.state === 'in-progress' ? 'Your active task' : 'Your next task'}</Text>
+      {scheduled[0] ? <TaskCard task={scheduled[0]} onOpen={() => setSelectedTask(scheduled[0].id)} /> : <View style={ui.card}>
+        <Text style={ui.heading}>Your time is open</Text>
+        <Text style={ui.body}>Find someone to help, or ask your community for a hand.</Text>
+        <ActionButton label="Find an exchange" onPress={() => router.navigate('/exchange')} />
+      </View>}
+      <View style={styles.balance}>
+        <Text accessibilityRole="header" style={ui.heading}>Your time</Text>
+        <Text style={styles.amount}>{formatDuration(availableSeconds)} available</Text>
+        <Text style={ui.body}>{formatDuration(reservedSeconds)} reserved for your requests</Text>
+        <ActionButton label="View time activity" onPress={() => router.navigate('/ledger')} secondary />
+      </View>
+      <View style={ui.card}>
+        <Text accessibilityRole="header" style={ui.heading}>Give a hand. Ask for a hand.</Text>
+        <ActionButton label="Ask for help" onPress={() => router.navigate({ pathname: '/exchange', params: { mode: 'request' } })} />
+        <ActionButton label="Help someone" onPress={() => router.navigate({ pathname: '/exchange', params: { mode: 'offer' } })} secondary />
+      </View>
+      {scheduled.length > 1 && <>
+        <Text accessibilityRole="header" style={ui.heading}>Coming up</Text>
+        {scheduled.slice(1).map((task) => <TaskCard key={task.id} task={task} onOpen={() => setSelectedTask(task.id)} />)}
+      </>}
+      {waiting.map((task) => <View key={task.id} style={ui.card}>
+        <Text style={ui.heading}>Waiting for {task.memberName}</Text>
+        <Text style={ui.body}>{task.title}: you have confirmed. No time moves until the other member confirms too.</Text>
+        <ActionButton label="View progress" onPress={() => setSelectedTask(task.id)} secondary />
+      </View>)}
+      <Text style={ui.caption}>{watchConnected ? 'Watch connected. Task syncing is not available yet.' : 'Watch disconnected. You can still use your phone.'}</Text>
+      {selectedTask && <TaskDetails taskId={selectedTask} onClose={() => setSelectedTask(null)} />}
+    </MemberPage>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F4F6F1' },
-  safeArea: { flex: 1 },
-  content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 20, paddingBottom: 120, gap: 18 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 14, marginBottom: 4 },
-  eyebrow: { color: '#116A58', fontSize: 12, fontWeight: '800', letterSpacing: 0 },
-  title: { color: '#17211E', fontSize: 34, lineHeight: 40, fontWeight: '800', letterSpacing: 0 },
-  statusPill: { minHeight: 34, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#F4E8D1', borderRadius: 17 },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#B87520' },
-  statusText: { color: '#795417', fontWeight: '700', fontSize: 13 },
-  heroPanel: { backgroundColor: '#DDEBE2', padding: 22, borderRadius: 8, gap: 8, borderLeftWidth: 5, borderLeftColor: '#33836C' },
-  heroLabel: { color: '#116A58', fontSize: 12, fontWeight: '800', letterSpacing: 0 },
-  heroTitle: { color: '#173B32', fontSize: 25, lineHeight: 31, fontWeight: '800', letterSpacing: 0 },
-  heroBody: { color: '#42645B', fontSize: 15, lineHeight: 22 },
-  notReadyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  notReadyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#B87520' },
-  notReadyText: { color: '#6B521D', fontSize: 12, fontWeight: '800' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginTop: 8 },
-  sectionTitle: { color: '#17211E', fontSize: 20, fontWeight: '800', letterSpacing: 0 },
-  sectionMeta: { color: '#69716D', fontSize: 13, fontWeight: '600' },
-  metricGrid: { flexDirection: 'row', gap: 8 },
-  metric: { flex: 1, minHeight: 116, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DED9', borderRadius: 7, padding: 13, justifyContent: 'space-between' },
-  metricLabel: { color: '#66706B', fontSize: 9, fontWeight: '900' },
-  metricValue: { color: '#17211E', fontSize: 29, fontWeight: '800' },
-  metricUnit: { color: '#77807C', fontSize: 11 },
-  contextNote: { color: '#69716D', fontSize: 12, lineHeight: 18, paddingHorizontal: 4 },
-  contactList: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DED9', borderRadius: 8, overflow: 'hidden' },
-  contactRow: { minHeight: 72, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#D9DED9' },
-  dialPosition: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#DDECE6' },
-  dialPositionText: { color: '#116A58', fontSize: 15, fontWeight: '900' },
-  contactCopy: { flex: 1, gap: 2 },
-  contactName: { color: '#17211E', fontSize: 16, fontWeight: '800' },
-  contactDetail: { color: '#69716D', fontSize: 12 },
-  contactState: { color: '#8A5A12', fontSize: 9, fontWeight: '900' },
-  emptyRow: { padding: 20, gap: 5 },
-  emptyTitle: { color: '#26322E', fontSize: 16, fontWeight: '700' },
-  emptyBody: { color: '#69716D', lineHeight: 20 },
-  notice: { borderLeftWidth: 4, borderLeftColor: '#B87520', backgroundColor: '#F7EACD', borderRadius: 5, padding: 14, gap: 4 },
-  noticeTitle: { color: '#70470E', fontSize: 14, fontWeight: '800' },
-  noticeBody: { color: '#76571F', fontSize: 13, lineHeight: 19 },
+  balance: { padding: 20, borderRadius: 16, backgroundColor: palette.paleBlue, gap: 12 },
+  amount: { color: palette.blue, fontSize: 30, fontWeight: '800' },
 });

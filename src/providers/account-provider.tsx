@@ -4,7 +4,7 @@ import { createContext, PropsWithChildren, useContext, useEffect, useRef, useSta
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
-export const TERMS_VERSION = '2026-09-13';
+export const TERMS_VERSION = '2026-09-23';
 
 export type UserProfile = {
   id: string;

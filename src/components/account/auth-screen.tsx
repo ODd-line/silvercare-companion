@@ -30,8 +30,8 @@ export function AuthScreen() {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.setupPanel}>
-          <Text style={styles.brand}>SILVERCARE</Text>
-          <Text style={styles.title}>Connect the secure database</Text>
+          <Text style={styles.brand}>SILVER BANK</Text>
+          <Text style={styles.title}>Connect the Time Bank service</Text>
           <Text style={styles.body}>Add your Supabase project details to a local environment file, then restart Expo.</Text>
           <View style={styles.codeBlock}>
             <Text style={styles.code}>EXPO_PUBLIC_SUPABASE_URL=...</Text>
@@ -48,9 +48,9 @@ export function AuthScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.intro}>
-            <Text style={styles.brand}>SILVERCARE</Text>
+            <Text style={styles.brand}>SILVER BANK · TIME BANK</Text>
             <Text style={styles.title}>{createAccount ? 'Create your account' : 'Welcome back'}</Text>
-            <Text style={styles.body}>Your support profile, mobility context, and trusted contacts stay attached to your private account.</Text>
+            <Text style={styles.body}>Give an hour. Receive an hour. Your exchanges and confirmed balance stay attached to your private account.</Text>
           </View>
 
           <View style={styles.form}>
@@ -105,12 +105,12 @@ export function AuthScreen() {
               }}
               style={({ pressed }) => [styles.switchButton, pressed && styles.pressed]}>
               <Text style={styles.switchText}>
-                {createAccount ? 'Already have an account? Sign in' : 'New to SilverCare? Create an account'}
+                {createAccount ? 'Already a member? Sign in' : 'New to the Time Bank? Create an account'}
               </Text>
             </Pressable>
           </View>
 
-          <Text style={styles.privacy}>Personal and health context is requested only after account creation and is isolated per user in the database.</Text>
+          <Text style={styles.privacy}>The service records membership, task agreements, confirmations, and ledger entries. The watch never creates credits by itself.</Text>
         </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -118,24 +118,24 @@ export function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F4F6F1' },
+  screen: { flex: 1, backgroundColor: '#F7F4EC' },
   safeArea: { flex: 1 },
   content: { flexGrow: 1, width: '100%', maxWidth: 520, alignSelf: 'center', justifyContent: 'center', padding: 24, gap: 28 },
   intro: { gap: 9 },
-  brand: { color: '#116A58', fontSize: 13, fontWeight: '900', letterSpacing: 0 },
+  brand: { color: '#174EA6', fontSize: 13, fontWeight: '900', letterSpacing: 0 },
   title: { color: '#17211E', fontSize: 36, lineHeight: 42, fontWeight: '900', letterSpacing: 0 },
   body: { color: '#59635F', fontSize: 16, lineHeight: 23 },
-  form: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DED9', borderRadius: 8, padding: 20, gap: 11 },
+  form: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#171A1F', padding: 20, gap: 11 },
   label: { color: '#38443F', fontSize: 13, fontWeight: '800', marginTop: 2 },
   input: { minHeight: 50, borderWidth: 1, borderColor: '#C9D0CB', borderRadius: 6, paddingHorizontal: 14, color: '#17211E', backgroundColor: '#FAFBF8', fontSize: 16 },
   error: { color: '#9D2E21', backgroundColor: '#F9DDD7', padding: 12, borderRadius: 5, lineHeight: 20 },
   notice: { color: '#0B5E4C', backgroundColor: '#D8EFE7', padding: 12, borderRadius: 5, lineHeight: 20 },
-  primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', backgroundColor: '#116A58', borderRadius: 6, marginTop: 4 },
+  primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', backgroundColor: '#174EA6', marginTop: 4 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  demoButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#116A58', borderRadius: 6 },
-  demoButtonText: { color: '#116A58', fontSize: 15, fontWeight: '800' },
+  demoButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#171A1F' },
+  demoButtonText: { color: '#171A1F', fontSize: 15, fontWeight: '800' },
   switchButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  switchText: { color: '#116A58', fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  switchText: { color: '#174EA6', fontSize: 14, fontWeight: '700', textAlign: 'center' },
   privacy: { color: '#747C78', fontSize: 12, lineHeight: 18, textAlign: 'center' },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.55 },
