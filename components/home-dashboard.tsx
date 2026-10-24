@@ -16,5 +16,6 @@ export function HomeDashboard({me,tasks,nav,give}:{me:any,tasks:any[],nav:(p:str
  <ActionDock className="home-action-dock" label={tr('Give Time')+' / '+tr('Get Help')} items={[{icon:<HeartHandshake/>,label:tr('Give Time'),onClick:give,className:'primary-action'},{icon:<Plus/>,label:tr('Get Help'),onClick:()=>nav('create')}]}/>
  <label className="home-search"><Search size={21}/><input type="search" aria-label={tr('Search requests')} placeholder={tr('Search requests')} value={search} onChange={e=>setSearch(e.target.value)}/></label>
  <Button variant="outline" onClick={()=>nav('programs')}><BookOpen/> Community Programs & Training</Button>
+ <Button variant="outline" asChild><a href="/community-demo/index.html"><Users/> Explore members & NGOs</a></Button>
  <section className="local-requests"><div className="section-title"><h2>{tr('In your area')}</h2><Button variant="link" onClick={give}>{tr('View all')}<ArrowRight size={18}/></Button></div>{shown.length?<TaskGallery onOpen={t=>nav('task/'+t.id)} tasks={shown.slice(0,8)} card={t=><TaskCard key={t.id} task={t} onOpen={()=>nav('task/'+t.id)}/>}/>:<div className="empty"><MapPin/><h3>{tr('No requests found')}</h3><Button variant="link" onClick={give}>{tr('View all')}</Button></div>}</section>
  </>}
