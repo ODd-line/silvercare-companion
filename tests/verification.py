@@ -10,16 +10,16 @@ def reject(sql,args=()):
  except sqlite3.IntegrityError:return
  raise AssertionError('Expected database rejection: '+sql)
 user('admin',role='admin');user('a');user('b');user('ngo','organization')
-assert c.execute('SELECT count(*) FROM ledger').fetchone()[0]==0
+assert c.execute('SELECT count(*) FROM ledger').fetchone()[0]==2
 for id in ['a','b']:
  c.execute("INSERT INTO identity_verifications(user_id,legal_name,birth_date,status) VALUES(?,?,?,'submitted')",(id,id,'1990-01-01'))
 reject("UPDATE identity_verifications SET status='verified' WHERE user_id='a'")
 def approve(id,key):
  c.execute("UPDATE identity_verifications SET status='verified',age_eligible=1,duplicate_status='clear',identity_key=?,reviewer_id='admin',verified_at=unixepoch(),evidence_reference='test reviewed original' WHERE user_id=?",(key,id))
 approve('a','unique-identity')
-assert c.execute("SELECT available FROM balances WHERE user_id='a'").fetchone()[0]==10800
+assert c.execute("SELECT available FROM balances WHERE user_id='a'").fetchone()[0]==3600
 reject("UPDATE identity_verifications SET status='verified',age_eligible=1,duplicate_status='clear',identity_key='unique-identity',reviewer_id='admin',verified_at=unixepoch(),evidence_reference='test' WHERE user_id='b'")
-assert c.execute("SELECT available FROM balances WHERE user_id='b'").fetchone()[0]==0
+assert c.execute("SELECT available FROM balances WHERE user_id='b'").fetchone()[0]==3600
 c.execute("UPDATE identity_verifications SET status='under_review' WHERE user_id='a'");approve('a','unique-identity')
 assert c.execute("SELECT COUNT(*) FROM ledger WHERE destination_id='a' AND type='onboarding'").fetchone()[0]==1
 c.execute("INSERT INTO categories VALUES('c','Test',1)")
@@ -33,4 +33,4 @@ reject("UPDATE organizations SET status='verified' WHERE id='o'")
 reject("UPDATE organizations SET status='verified',registry_checked=1,representative_checked=0,evidence_reference='registry',reviewer_id='admin',verified_at=unixepoch(),review_due=unixepoch()+3600 WHERE id='o'")
 c.execute("UPDATE organizations SET status='verified',registry_checked=1,representative_checked=1,evidence_reference='registry and authorization',reviewer_id='admin',verified_at=unixepoch(),review_due=unixepoch()+3600 WHERE id='o'")
 assert c.execute("SELECT available FROM balances WHERE user_id='ngo'").fetchone()[0]==0
-print('PASS: pending accounts receive no credit; approval requires evidence; duplicate identities blocked; starter credit issued once; unverified tasks blocked; organization legitimacy AND representative authority required; account type immutable.')
+print('PASS: new personal accounts receive one hour before verification; approval requires evidence; duplicate identities blocked; starter credit issued once; unverified tasks blocked; organization legitimacy AND representative authority required; account type immutable.')

@@ -1,4 +1,4 @@
-"""The three-hour policy, tested only in an isolated in-memory database."""
+"""The one-hour signup policy, tested only in an isolated in-memory database."""
 import sqlite3,glob
 c=sqlite3.connect(':memory:');c.execute('PRAGMA foreign_keys=ON')
 for file in sorted(glob.glob('drizzle/*.sql')):c.executescript(open(file).read())
@@ -21,13 +21,13 @@ def settle(task,helper,requester,seconds):
  c.execute("UPDATE tasks SET requester_ready=1,helper_ready=1,status='in_progress',started_at=unixepoch()-? WHERE id=?",(seconds,task))
  c.execute("UPDATE tasks SET status='awaiting_confirmation',finished_at=started_at+?,actual_seconds=?,finished_by=? WHERE id=?",(seconds,seconds,helper,task))
  c.execute("UPDATE tasks SET status='completed',confirmed_by=?,confirmed_at=unixepoch() WHERE id=?",(requester,task))
-assert available('requester')==10800
-post('first','requester',10800);assert available('requester')==0;denied('while-reserved')
-settle('first','helper','requester',10800);assert available('requester')==0;denied('after-spending')
+assert available('requester')==3600
+post('first','requester',3600);assert available('requester')==0;denied('while-reserved')
+settle('first','helper','requester',3600);assert available('requester')==0;denied('after-spending')
 assert c.execute("SELECT COUNT(*) FROM ledger WHERE destination_id='requester' AND type='onboarding'").fetchone()[0]==1
 post('give-back','helper',60);settle('give-back','requester','helper',60)
 assert available('requester')==60
 post('earned-request','requester',60);assert available('requester')==0
 c.execute("UPDATE tasks SET status='cancelled' WHERE id='earned-request'");assert available('requester')==60
-assert c.execute('SELECT SUM(total) FROM balances').fetchone()[0]==21600
-print('PASS: one starter grant; three hours reserved/spent; further requests blocked; earning unlocks requests; cancellations return reserved credit; total time conserved.')
+assert c.execute('SELECT SUM(total) FROM balances').fetchone()[0]==7200
+print('PASS: one starter grant; one hour reserved/spent; further requests blocked; earning unlocks requests; cancellations return reserved credit; total time conserved.')

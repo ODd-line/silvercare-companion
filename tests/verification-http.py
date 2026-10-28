@@ -20,7 +20,7 @@ base={'password':password,'location':'Hong Kong S.A.R. / Sha Tin','phone':'+8521
 def register(n,**extra):
  c=Client();c.call('auth/register',{**base,'accountType':'individual','birthDate':'1990-01-01','name':'Test '+n,'email':s+'-'+n+'@example.test',**extra});c.me=c.call('me');return c
 public.call('auth/register',{**base,'name':'Underage','email':s+'-young@example.test','accountType':'individual','birthDate':datetime.date.today().isoformat()},400)
-a=register('a');b=register('b');assert a.me['balance']['total']==0 and not a.me['verification']['canParticipate']
+a=register('a');b=register('b');assert a.me['balance']['total']==3600 and not a.me['verification']['canParticipate']
 a.call('tasks',{},403);a.call('verification/review-queue',status=403)
 aid=a.me['user']['id'];bid=b.me['user']['id']
 def review(user,status='under_review',**extra):
@@ -28,8 +28,8 @@ def review(user,status='under_review',**extra):
  return admin.call('verification/review',{'userId':user,'version':v['version'],'status':status,'reason':'Synthetic evidence reviewed',**extra})
 review(aid)
 checks={'ageChecked':True,'identityChecked':True,'duplicateChecked':True,'identityIssuer':'TEST-ISSUER','identityIdentifier':'test-unique-'+s,'evidenceReference':'Synthetic original evidence reference'}
-review(aid,'verified',**checks);assert a.call('me')['balance']['total']==10800
-review(bid);assert review(bid,'verified',**checks)['reviewRequired'];assert b.call('me')['balance']['total']==0
+review(aid,'verified',**checks);assert a.call('me')['balance']['total']==3600
+review(bid);assert review(bid,'verified',**checks)['reviewRequired'];assert b.call('me')['balance']['total']==3600
 v=public.call('policies');assert 'birth_date' not in a.call('profiles/'+aid)
 review(aid);review(aid,'verified',**checks);assert a.call('me')['balance']['total']==10800
 orgFields={'legalName':'Synthetic NGO','publicName':'Test Partner','jurisdiction':'TEST-JURISDICTION','entityType':'Association','registrationId':s,'registeredAddress':'Synthetic test address','website':'https://example.org','contactEmail':'test@example.org','contactPhone':'+85212345678','mission':'Synthetic community activity','representativeName':'Test Rep','representativeRole':'Director','representativeEmail':'test@example.org'}

@@ -5,7 +5,7 @@ import { Children, cloneElement, useEffect, useMemo, useRef, useState } from 're
 
 import './Dock.css';
 
-function DockItem({ children, className = '', onClick, mouseX, spring, distance, magnification, baseItemSize, label, active, inline, renderButton }) {
+function DockItem({ children, className = '', onClick, mouseX, spring, distance, magnification, baseItemSize, label, active, inline, iconOnly, renderButton }) {
   const ref = useRef(null);
   const isHovered = useMotionValue(0);
 
@@ -47,6 +47,7 @@ function DockItem({ children, className = '', onClick, mouseX, spring, distance,
       role="button"
       aria-current={active ? "page" : undefined}
       aria-label={label}
+      title={iconOnly ? label : undefined}
     >
       {Children.map(children, child => cloneElement(child, { isHovered }))}
     </motion.button>
@@ -92,6 +93,7 @@ function DockIcon({ children, className = '' }) {
 export default function Dock({
   items,
   inline = false,
+  iconOnly = false,
   label = 'Application dock',
   className = '',
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
@@ -130,6 +132,7 @@ export default function Dock({
         {items.map((item, index) => (
           <DockItem
             inline={inline}
+            iconOnly={iconOnly}
             key={index}
             onClick={item.onClick}
             className={item.className}
@@ -142,7 +145,7 @@ export default function Dock({
             active={item.active}
             renderButton={item.renderButton}
           >
-            <DockIcon><span>{item.icon}</span><span className="dock-item-text">{item.label}</span></DockIcon>
+            <DockIcon><span aria-hidden="true">{item.icon}</span>{!iconOnly && <span className="dock-item-text">{item.label}</span>}</DockIcon>
 
           </DockItem>
         ))}

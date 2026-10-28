@@ -12,8 +12,8 @@ New registration starts with Individual / Community Member or NGO / Community Pa
 2. Contact verification staff to arrange an in-person check. Do not send ID images/numbers in chat.
 3. An administrator starts review, checks the original identity against the person, checks birth date and eligibility, and investigates possible previous accounts.
 4. The reviewer enters the issuer/scheme and stable identity identifier using the same normalization convention for every review. The server stores an HMAC fingerprint, never the raw identifier. It requires a private `VERIFICATION_HASH_KEY`; approval fails closed when missing. Preserve this key securely when migrating, otherwise fingerprints cannot be compared reliably.
-5. An existing fingerprint sends the application to duplicate review and grants no second approval or starter credit. Applicant feedback never exposes the other account. Recovery uses the existing private recovery-key flow.
-6. Approval requires all checks and an evidence/case reference. Starter credit is issued exactly once; previous grants and ledgers remain intact. Administrators cannot approve their own applications.
+5. An existing fingerprint sends the application to duplicate review and does not approve participation. Applicant feedback never exposes the other account. Recovery uses the existing private recovery-key flow.
+6. Approval requires all checks and an evidence/case reference. New personal member accounts, including guests, receive one hour of welcome credit at sign-up. Verification never issues an additional grant; previous grants and ledgers remain intact. Administrators cannot approve their own applications.
 
 Manual verification is a human process, not automated document authentication or liveness detection. Matching fingerprints only detects the same identifier; reviewers must handle alternate documents, replaced documents and possible prior identities. No claim of universal one-person detection is made. No paid identity provider or SMS service is called.
 

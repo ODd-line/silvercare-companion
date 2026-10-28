@@ -5,6 +5,7 @@ import type {PreferenceStore} from '../lib/preferences';
 import {PreferenceProvider} from './preferences';
 import {WatchHistory} from './watch-history';
 import {Button} from './ui/button';
+import {CareInfo} from './care-info';
 
 export function LocalWatchHistory({repository,scope,preferences}:{repository:WatchHistoryRepository;scope:string;preferences:PreferenceStore}){
   const [page,setPage]=useState<LocalWatchPage>({records:[],total:0,pending:0});
@@ -44,12 +45,12 @@ export function LocalWatchHistory({repository,scope,preferences}:{repository:Wat
     unit:record.kind==='heart_rate'?'bpm':'steps',measured_at:record.receivedAt/1000,
     timestamp_source:'phone_received',device_name:record.deviceName}));
   return <section aria-label="Private on-phone history">
-    <p>{page.total.toLocaleString()} observations retained on this phone; {page.pending.toLocaleString()} not marked uploaded. Upload still requires your cloud-saving permission.</p>
-    <p>There is no automatic age-based deletion. The graph and table show up to 200 records on this page, not your entire archive. Use Older records and All dates to inspect earlier readings. History is separated by account and server.</p>
+    <p>{page.total.toLocaleString()} observations retained on this phone; {page.pending.toLocaleString()} awaiting upload permission or sync.</p>
+    <div className="care-section-heading"><h3>Phone history</h3><CareInfo title="Phone history"><p>Showing up to 200 records. Choose Older records or All dates to see more.</p><p>History stays until you delete it and is separate for each account and server. Cloud uploads need separate permission.</p></CareInfo></div>
     {error&&<p role="alert" className="error">{error}</p>}
     <PreferenceProvider store={preferences}>
-      <WatchHistory title="On-phone watch history" allowAllTime measurements={measurements} onRefresh={()=>request(before)}
-        emptyMessage="No observations in this period on this page. Enable on-phone history to record future readings, or select All dates to see older records."/>
+      <WatchHistory title="On-phone watch history" compact allowAllTime measurements={measurements} onRefresh={()=>request(before)}
+        emptyMessage="No readings for this period on this page. Try All dates, or enable on-phone history."/>
     </PreferenceProvider>
     <div className="care-actions">
       <Button variant="outline" disabled={busy||before===undefined} onClick={()=>void request()}>Latest records</Button>

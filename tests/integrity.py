@@ -11,6 +11,8 @@ def fails(sql,*args):
  else:raise AssertionError('Expected rejection: '+sql)
 q("INSERT INTO settings VALUES('onboarding_seconds','120')")
 for u in ['requester','helper','outsider']:q("INSERT INTO users(id,email,name,password,recovery,location) VALUES(?,?,?,?,?,?)",u,u+'@test.invalid',u,'test hash','test hash','Test only')
+# Fund this insufficient-credit scenario with exactly two minutes after the fixed signup grant.
+for member in ['requester','helper','outsider']:q("INSERT INTO ledger(id,source_id,amount,type,metadata) VALUES(?,?,3480,'adjustment','Synthetic test balance reduction')",'fixture-reduction-'+member,member)
 from verified_fixture import verify_members
 verify_members(c)
 q("INSERT INTO categories VALUES('category','Test category',1)")

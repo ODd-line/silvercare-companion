@@ -1,5 +1,14 @@
 import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+export const careEmailPreferences=sqliteTable('care_email_preferences',{
+ userId:text('user_id').primaryKey().references(()=>users.id),enabled:integer('enabled').notNull().default(0),email:text('email').notNull(),verifiedAt:integer('verified_at'),sections:text('sections').notNull().default('["checkins","heart","notes"]'),unsubscribeToken:text('unsubscribe_token').notNull().unique(),revision:integer('revision').notNull().default(1),updatedAt:integer('updated_at').notNull(),
+});
+export const careEmailChallenges=sqliteTable('care_email_challenges',{
+ userId:text('user_id').primaryKey().references(()=>users.id),email:text('email').notNull(),codeHash:text('code_hash').notNull(),expires:integer('expires').notNull(),attempts:integer('attempts').notNull().default(0),requestedAt:integer('requested_at').notNull(),
+});
+export const careEmailDeliveries=sqliteTable('care_email_deliveries',{
+ id:text('id').primaryKey(),userId:text('user_id').notNull().references(()=>users.id),weekStart:integer('week_start').notNull(),revision:integer('revision').notNull(),payload:text('payload').notNull(),status:text('status').notNull().default('pending'),providerId:text('provider_id'),createdAt:integer('created_at').notNull(),leaseUntil:integer('lease_until').notNull().default(0),attempts:integer('attempts').notNull().default(0),sentAt:integer('sent_at'),
+},t=>[uniqueIndex('care_email_user_week').on(t.userId,t.weekStart),index('care_email_due').on(t.status,t.leaseUntil),index('care_email_provider').on(t.providerId)]);
 const id = () => text('id').primaryKey();
 const created = () => integer('created_at').notNull().default(sql`(unixepoch())`);
 export const users = sqliteTable('users', {

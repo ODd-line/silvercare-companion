@@ -1,4 +1,5 @@
 import {careRoute,ingestCare} from '@/lib/care';
+import {WELCOME_CREDIT_SECONDS,WELCOME_CREDIT_MINUTES} from '@/lib/credit-policy.mjs';
 import {partnerRoute,programsRoute,taskPreparation} from '@/lib/partners';
 import {verificationRoute,verificationSummary,verificationPolicy,dateOfBirth,ageBandFromBirth,oldEnough,createOrganization,requireParticipation} from '@/lib/verification';
 import {communityRoute,scanFlags} from '@/lib/community';
@@ -55,7 +56,7 @@ async function handler(req:Request) {try{
   const key=(env as any).ADMIN_SETUP_KEY;if(!key||!equal(String(b.setupKey||''),key))fail('A valid administrator setup key is required.',403);
   const email=required(b.email,254).toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail('Enter a valid email.');const pass=required(b.password,256);if(pass.length<12)fail('Use at least 12 characters.');const adminId=uid(),rec=secret();
   const cats=['Shopping and errands','Parcel collection','Pet care','Plant care','Technology assistance','Household help','Language practice','Teaching and skills exchange','Companionship','Community assistance','Other'];
-  await database().batch([query("INSERT INTO settings(id,value) VALUES('configured','1')"),query("INSERT INTO settings(id,value) VALUES('onboarding_seconds',?)",String(whole(b.starterMinutes,0,525600)*60)),query("INSERT INTO users(id,email,name,password,recovery,location,role) VALUES(?,?,?,?,?,?,'admin')",adminId,email,required(b.name,100),await password(pass),await hash(rec),communityLocation(b)),...cats.map(name=>query('INSERT INTO categories(id,name) VALUES(?,?)',uid(),name)),query("INSERT INTO admin_actions(id,actor_id,action,target_id,reason) VALUES(?,?,'initialize','settings','Initial community configuration')",uid(),adminId)]);
+  await database().batch([query("INSERT INTO settings(id,value) VALUES('configured','1')"),query("INSERT INTO settings(id,value) VALUES('onboarding_seconds',?)",String(WELCOME_CREDIT_SECONDS)),query("INSERT INTO users(id,email,name,password,recovery,location,role) VALUES(?,?,?,?,?,?,'admin')",adminId,email,required(b.name,100),await password(pass),await hash(rec),communityLocation(b)),...cats.map(name=>query('INSERT INTO categories(id,name) VALUES(?,?)',uid(),name)),query("INSERT INTO admin_actions(id,actor_id,action,target_id,reason) VALUES(?,?,'initialize','settings','Initial community configuration')",uid(),adminId)]);
   return reply({ok:true,recoveryKey:rec});
  }
  if(root==='care-device'){if(!post)fail('Method not allowed.',405);await rate(req,'care-device',120);return reply(await ingestCare(req,b));}
@@ -147,7 +148,7 @@ async function handler(req:Request) {try{
   admin(u);
   if(!post)return reply({users:await rows('SELECT u.id,u.name,u.email,u.role,u.suspended,b.* FROM users u JOIN balances b ON b.user_id=u.id ORDER BY u.created_at DESC LIMIT 500'),tasks:await rows(taskSelect+' ORDER BY t.created_at DESC LIMIT 500'),ledger:await rows('SELECT * FROM ledger ORDER BY created_at DESC,rowid DESC LIMIT 500'),audit:await rows('SELECT * FROM admin_actions ORDER BY created_at DESC,rowid DESC LIMIT 500'),settings:await rows('SELECT * FROM settings'),categories:await rows('SELECT * FROM categories ORDER BY name')});
   const reason=required(b.reason,2000);const aid=uid();let statements:any[]=[];
-  if(id==='settings'){const amount=whole(b.starterMinutes,0,525600)*60;statements=[query("UPDATE settings SET value=? WHERE id='onboarding_seconds'",String(amount))];}
+  if(id==='settings'){if(Number(b.starterMinutes)!==WELCOME_CREDIT_MINUTES)fail('Welcome credit is fixed at 60 minutes for new members.');statements=[query("UPDATE settings SET value=? WHERE id='onboarding_seconds'",String(WELCOME_CREDIT_SECONDS))];}
   else if(id==='category'){statements=b.categoryId?[query('UPDATE categories SET active=? WHERE id=?',b.active?1:0,b.categoryId)]:[query('INSERT INTO categories(id,name) VALUES(?,?)',uid(),required(b.name,100))];}
   else if(id==='suspend'){if(b.userId===u.id)fail('You cannot suspend your own administrator account.');statements=[query('UPDATE users SET suspended=? WHERE id=?',b.suspended?1:0,required(b.userId)),query('DELETE FROM sessions WHERE user_id=?',b.userId)];}
   else if(id==='adjust'){const n=whole(b.seconds,-31536000,31536000);if(!n)fail('Adjustment cannot be zero.');if(!await one('SELECT id FROM users WHERE id=?',b.userId))fail('Member not found.');statements=[query("INSERT INTO ledger(id,source_id,destination_id,amount,type,actor_id,metadata) VALUES(?,?,?,?, 'adjustment',?,?)",aid,n<0?b.userId:null,n>0?b.userId:null,Math.abs(n),u.id,reason)];}

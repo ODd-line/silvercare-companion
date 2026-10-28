@@ -65,7 +65,7 @@ try{
  assert.equal(firstMe.data.user.recovery,undefined);
  assert.equal(firstMe.data.needsOnboarding,true);
  assert.equal(firstMe.data.verification.canParticipate,false);
- assert.equal(firstMe.data.balance.total,0);
+ assert.equal(firstMe.data.balance.total,3600);
  assert.equal(database.prepare('SELECT recovery FROM users WHERE id=?').get(userId).recovery,await hash(first.data.recoveryKey));
  assert.equal(database.prepare('SELECT id FROM sessions WHERE user_id=?').get(userId).id,await hash(first.data.sessionToken));
  for(const endpoint of ['tasks','ledger','notifications','recommendations','talent-profile','verification','programs'])assert.equal((await call(endpoint,undefined,first.data.sessionToken)).status,200,endpoint);
@@ -112,7 +112,7 @@ try{
  assert.equal((await call('auth/guest-recover',{recoveryKey:first.data.recoveryKey})).status,200);
  database.prepare('UPDATE users SET suspended=1 WHERE id=?').run(userId);
  assert.equal((await call('auth/guest-recover',{recoveryKey:first.data.recoveryKey})).status,403);
- assert.equal(database.prepare('SELECT COUNT(*) AS count FROM ledger').get().count,0);
+ assert.equal(database.prepare("SELECT COUNT(*) AS count FROM ledger WHERE type='onboarding'").get().count,2);
 
  const regularKey='1'.repeat(64),regularPassword='a-valid-test-password';
  database.prepare('INSERT INTO users(id,email,name,password,recovery) VALUES(?,?,?,?,?)').run('regular','regular@example.invalid','Regular member',await password(regularPassword),await hash(regularKey));
@@ -184,7 +184,7 @@ try{
  await page.getByText('Not saving watch readings',{exact:true}).waitFor();
  await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Care',exact:true}).click();
  await page.getByRole('menuitem',{name:'My Health',exact:true}).click();
- await expect(page.getByRole('region',{name:'Step counter history',exact:true}).locator('.care-history-value')).toHaveText('654 steps');
+ await expect(page.getByRole('group',{name:'Latest saved readings',exact:true}).locator('.care-history-value').last()).toHaveText('654 steps');
  for(const section of ['home','tasks','bank']){
   await page.goto(base+'/#'+section);
   await page.getByText('Guest account: your saved records are private. Keep your recovery code for future sign-ins.',{exact:false}).waitFor();

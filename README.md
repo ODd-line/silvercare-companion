@@ -35,6 +35,8 @@ separate from real accounts and transactions.
 - [Developer guide](docs/DEVELOPER_GUIDE.md)
 - [PineTime/Mastro integration and hardware limits](docs/PINETIME_WATCH.md)
 - [Silver Care data and consent model](docs/silver-care.md)
+- [Weekly email summaries with Resend: status and plan](docs/WEEKLY_EMAIL_PLAN.md)
+- [Weekly email deployment and operations](docs/WEEKLY_EMAIL_SETUP.md)
 - [Historical validation report and known limitations](docs/VALIDATION_REPORT.md)
 - [Imported implementation/release notes](IMPLEMENTATION_NOTES.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
@@ -52,6 +54,11 @@ Open **http://localhost:3042/#care/overview**. Resize the browser to a phone-siz
 viewport to inspect the mobile layout. This runs the real shared UI with local,
 in-memory API fixtures: no real accounts, cloud writes, bookings, or messages.
 It is not the former Expo sign-in screen. Stop the preview with Ctrl+C.
+
+Profile opens with a compact identity card, contribution stats, and grouped
+community/account actions. Choose **Edit profile** or **Personal details** to
+update account information, language, talents, or your photo. Availability and
+agreements expand in place; device-only reset options stay under **Device options**.
 
 Alternatively, the normal app offers **Try demo without signing in**. Native
 Bluetooth and native storage require an installed build; a browser cannot
@@ -97,6 +104,7 @@ npm run test:demo
 npm run test:community
 npm run test:watch:care
 npm run test:navigation
+npm run test:profile:web
 npm run build:cloudflare
 ```
 

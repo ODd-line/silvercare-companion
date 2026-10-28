@@ -26,11 +26,11 @@ admin.call('setup',{'email':aemail,'name':'Integration administrator','password'
 admin.call('auth/login',{'email':aemail,'password':password})
 clients=[]
 for n in range(3):
- c=Client();c.email=f'member-{n}-{seed}@example.test';r=c.call('auth/register',{'email':c.email,'password':password,'name':f'Integration member {n}','location':'Hong Kong S.A.R. / Sha Tin',**extra});c.recovery=r['recoveryKey'];c.me=c.call('me');assert c.me['balance']['available']==0
+ c=Client();c.email=f'member-{n}-{seed}@example.test';r=c.call('auth/register',{'email':c.email,'password':password,'name':f'Integration member {n}','location':'Hong Kong S.A.R. / Sha Tin',**extra});c.recovery=r['recoveryKey'];c.me=c.call('me');assert c.me['balance']['available']==3600
  user_id=c.me['user']['id']
  admin.call('verification/review',{'userId':user_id,'version':0,'status':'under_review','reason':'Synthetic test review'})
  admin.call('verification/review',{'userId':user_id,'version':1,'status':'verified','reason':'Synthetic original evidence checked','ageChecked':True,'identityChecked':True,'duplicateChecked':True,'identityIssuer':'TEST','identityIdentifier':seed+str(n),'evidenceReference':'Isolated test only'})
- c.me=c.call('me');assert c.me['balance']['available']==7200;clients.append(c)
+ c.me=c.call('me');assert c.me['balance']['available']==3600;clients.append(c)
  open('.wrangler/test-login.json','w').write(json.dumps({'email':c.email,'password':password}))
 a,b,c=clients
 assert a.call('me')['user']['location']=='Hong Kong S.A.R. / Sha Tin'
@@ -99,8 +99,8 @@ helper.call('tasks/'+tid+'/confirm',{},expected=409)
 with concurrent.futures.ThreadPoolExecutor() as pool:
  rs=list(pool.map(lambda _:a.call('tasks/'+tid+'/confirm',{},expected=None),range(2)))
 assert sorted(r[0] for r in rs)==[200,409],rs
-assert a.call('me')['balance']['available']==7200-amount
-assert helper.call('me')['balance']['available']==7200+amount
+assert a.call('me')['balance']['available']==3600-amount
+assert helper.call('me')['balance']['available']==3600+amount
 assert a.call('me')['balance']['reserved']==0
 entries=a.call('ledger')['entries'];assert len([x for x in entries if x['task_id']==tid and x['type']=='transfer'])==1
 assert len([x for x in entries if x['task_id']==tid and x['type']=='release'])==1
@@ -110,15 +110,15 @@ other.call('tasks/'+tid+'/review',{'rating':5},expected=403)
 assert helper.call('me')['user']['rating']==5
 assert len(a.call('notifications'))>=3
 a.call('notifications',{});assert all(n['read_at'] for n in a.call('notifications'))
-a.call('auth/logout',{});a.call('me',expected=401);a.call('auth/login',{'email':a.email,'password':password});assert a.call('me')['balance']['available']==7200-amount
+a.call('auth/logout',{});a.call('me',expected=401);a.call('auth/login',{'email':a.email,'password':password});assert a.call('me')['balance']['available']==3600-amount
 # Concurrent requests cannot reserve more than the available balance.
 with concurrent.futures.ThreadPoolExecutor() as pool:
  def attempt(_):
-  try:return create(other,90)
+  try:return create(other,45)
   except AssertionError as e:return None
  race=list(pool.map(attempt,range(2)))
 assert sum(bool(x) for x in race)==1,race
-assert other.call('me')['balance']['available']==1800
+assert other.call('me')['balance']['available']==900
 for cancelid in filter(None,race):other.call('tasks/'+cancelid+'/cancel',{'reason':'Integration cancellation'})
 assert other.call('me')['balance']['reserved']==0
 # Dispute keeps funds held until audited administrator action.
@@ -127,18 +127,18 @@ assert a.call('me')['balance']['reserved']==900
 admin.call('admin/resolve',{'taskId':dispute,'resolution':'cancel','reason':'Integration dispute resolution'})
 assert a.call('me')['balance']['reserved']==0
 admin.call('admin/adjust',{'userId':a.me['user']['id'],'seconds':60,'reason':'Integration adjustment'})
-assert a.call('me')['balance']['available']==7260-amount
-admin.call('admin/settings',{'starterMinutes':0,'reason':'Integration zero-credit policy'})
-fresh=Client();fresh.call('auth/register',{'email':'zero-'+seed+'@example.test','password':password,'name':'Integration zero credit','location':'Hong Kong S.A.R. / Sha Tin',**extra});assert fresh.call('me')['balance']['available']==0
-request={'title':'No-credit request','description':'Isolated test','categoryId':cat,'location':'Hong Kong S.A.R. / Sha Tin','remote':True,'minutes':60,'requestedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(time.time()+86400))}
+assert a.call('me')['balance']['available']==3660-amount
+admin.call('admin/settings',{'starterMinutes':0,'reason':'Cannot disable the fixed welcome credit'},expected=400)
+fresh=Client();fresh.call('auth/register',{'email':'zero-'+seed+'@example.test','password':password,'name':'Integration zero credit','location':'Hong Kong S.A.R. / Sha Tin',**extra});assert fresh.call('me')['balance']['available']==3600
+request={'title':'No-credit request','description':'Isolated test','categoryId':cat,'location':'Hong Kong S.A.R. / Sha Tin','remote':True,'minutes':61,'requestedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(time.time()+86400))}
 fresh.call('tasks',request,expected=403)
 fresh_id=fresh.call('me')['user']['id']
 admin.call('verification/review',{'userId':fresh_id,'version':0,'status':'under_review','reason':'Synthetic zero-credit review'})
 admin.call('verification/review',{'userId':fresh_id,'version':1,'status':'verified','reason':'Synthetic original evidence checked','ageChecked':True,'identityChecked':True,'duplicateChecked':True,'identityIssuer':'TEST','identityIdentifier':seed+'zero','evidenceReference':'Isolated test only'})
 assert fresh.call('me')['verification']['canParticipate']
 denied=fresh.call('tasks',request,expected=409)
-assert '0h 0m' in denied['error']
-assert fresh.call('me')['balance']['available']==0
+assert '1h 0m' in denied['error']
+assert fresh.call('me')['balance']['available']==3600
 assert fresh.call('me')['balance']['reserved']==0
 assert len(fresh.call('me')['agreements'])==2
 assert fresh.call('me')['user']['phone']==extra['phone']
@@ -149,7 +149,7 @@ newpass=uuid.uuid4().hex
 recovered=a.call('auth/recover',{'email':a.email,'password':newpass,'recoveryKey':a.recovery});assert recovered['recoveryKey']!=a.recovery
 old.call('me',expected=401)
 a.call('auth/recover',{'email':a.email,'password':password,'recoveryKey':a.recovery},expected=401)
-assert a.call('me')['balance']['available']==7260-amount
+assert a.call('me')['balance']['available']==3660-amount
 admin.call('admin/suspend',{'userId':other.me['user']['id'],'suspended':True,'reason':'Integration suspension'})
 other.call('me',expected=401)
 other.call('auth/login',{'email':other.email,'password':password},expected=403)

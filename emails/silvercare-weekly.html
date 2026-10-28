@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your SilverCare weekly summary</title></head>
+<body style="margin:0;padding:0;background-color:#f6f7f2;font-family:Arial,Helvetica,sans-serif;color:#315447;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your private weekly check-ins, saved readings and health-note counts.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f7f2;"><tr><td align="center" style="padding:28px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;border:1px solid #e2e8df;border-radius:16px;background-color:#ffffff;">
+<tr><td style="padding:30px 28px;background-color:#f0f4e9;border-radius:16px 16px 0 0;">
+<p style="margin:0 0 24px;font-size:23px;font-weight:bold;letter-spacing:-0.5px;color:#355b50;">Silver<span style="color:#81946a;">Care</span></p>
+<p style="margin:0 0 10px;font-size:11px;letter-spacing:1.5px;color:#748365;">YOUR WEEK IN WELLBEING · {{{WEEK_LABEL}}}</p>
+<h1 style="margin:0 0 15px;font-size:32px;line-height:1.2;letter-spacing:-0.8px;color:#24483e;">Small check-ins.<br>A clearer picture.</h1>
+<p style="margin:0;font-size:14px;line-height:1.7;color:#6e7e70;">Hi {{{MEMBER_NAME}}}, here is a simple look at your week.<br>Your check-ins, saved readings and personal health-note counts, together.</p>
+</td></tr>
+<tr><td style="padding:26px 24px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+<td width="33%" valign="top" style="padding:15px 10px;border:1px solid #e2e8df;border-radius:10px;"><p style="margin:0;font-size:12px;line-height:1.5;color:#6b7b70;">Check-in days</p><p style="margin:12px 0 5px;font-size:27px;line-height:1.2;color:#345e50;">{{{CHECKIN_DAYS}}}</p><p style="margin:0;font-size:11px;line-height:1.5;color:#839082;">Days recorded this week</p></td>
+<td width="3%"></td>
+<td width="31%" valign="top" style="padding:15px 10px;border:1px solid #e2e8df;border-radius:10px;"><p style="margin:0;font-size:12px;line-height:1.5;color:#6b7b70;">Average heart rate</p><p style="margin:12px 0 5px;font-size:27px;line-height:1.2;color:#345e50;">{{{HEART_AVERAGE}}}</p><p style="margin:0;font-size:11px;line-height:1.5;color:#839082;">Saved observations only</p></td>
+<td width="3%"></td>
+<td width="30%" valign="top" style="padding:15px 10px;border:1px solid #e2e8df;border-radius:10px;"><p style="margin:0;font-size:12px;line-height:1.5;color:#6b7b70;">Health notes</p><p style="margin:12px 0 5px;font-size:27px;line-height:1.2;color:#345e50;">{{{NOTE_COUNT}}}</p><p style="margin:0;font-size:11px;line-height:1.5;color:#839082;">Your own observations</p></td>
+</tr></table>
+<h2 style="margin:28px 0 12px;font-size:18px;color:#315447;">Your saved readings</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#62776a;">
+<tr><td style="padding:12px 0;border-bottom:1px solid #edf0e9;">Heart-rate observations</td><td align="right" style="padding:12px 0;border-bottom:1px solid #edf0e9;color:#345e50;">{{{HEART_COUNT}}}</td></tr>
+<tr><td style="padding:12px 0;border-bottom:1px solid #edf0e9;">Recorded heart-rate range</td><td align="right" style="padding:12px 0;border-bottom:1px solid #edf0e9;color:#345e50;">{{{HEART_RANGE}}}</td></tr>
+</table>
+<p style="margin:13px 0 0;font-size:12px;line-height:1.7;color:#839082;">These are separate saved observations, not continuous monitoring. Missing readings do not mean zero. This summary does not provide a medical assessment.</p>
+<h2 style="margin:28px 0 10px;font-size:18px;color:#315447;">Keep what matters close</h2>
+<p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#6e7e70;">Review your notes, look back at your timeline, and bring the questions that matter to your next appointment.</p>
+<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:8px;background-color:#395f4f;"><a href="{{{HEALTH_URL}}}" style="display:inline-block;padding:14px 22px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">Open My Health →</a></td></tr></table>
+<p style="margin:24px 0 0;font-size:12px;line-height:1.7;color:#829180;">Your private summary includes the information you chose. Adding a family contact does not share this report with them.</p>
+</td></tr>
+<tr><td align="center" style="padding:20px 24px;border-top:1px solid #edf0e9;background-color:#fcfdf9;border-radius:0 0 16px 16px;">
+<p style="margin:0 0 8px;font-size:12px;line-height:1.7;color:#859180;">SilverCare · Your wellbeing, with you in control.</p>
+<p style="margin:0;font-size:12px;line-height:1.7;color:#859180;">You received this because you enabled weekly summaries.<br><a href="{{{PREFERENCES_URL}}}" style="color:#456f59;text-decoration:underline;">Manage or stop weekly emails</a></p>
+<p style="margin:12px 0 0;font-size:10px;line-height:1.6;color:#98a18f;">Wellbeing support. Not a diagnostic or emergency service.</p>
+</td></tr></table>
+</td></tr></table>
+</body></html>

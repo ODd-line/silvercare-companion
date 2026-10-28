@@ -127,6 +127,20 @@
       "when": 1792248424928,
       "tag": "0017_watch_history_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1792916965829,
+      "tag": "0018_care_weekly_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1793030943160,
+      "tag": "0019_signup_credit",
+      "breakpoints": true
     }
   ]
 }

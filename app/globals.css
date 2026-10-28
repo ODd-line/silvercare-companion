@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
+@import "./mobile-ui.css";
+@import "./timeline.css";
 .app-care-menu{width:240px;max-width:calc(100vw - 32px);max-height:var(--radix-dropdown-menu-content-available-height);overflow-y:auto;border-radius:8px;background:#fff;color:#1c2630;border:1px solid #cbd9d0;box-shadow:0 8px 24px #1c263026}
 .app-care-menu [role=menuitem]{min-height:44px;padding:10px 12px;gap:12px;font-size:1rem;white-space:normal;overflow-wrap:anywhere}
 .app-care-menu [role=menuitem][data-highlighted]{background:#edf3ef;color:#174e3f}
@@ -88,14 +90,13 @@ body,.auth-shell{background:#fff}h1,h2,h3{color:#17263d}.app>header .brand{color
 .gallery-stage{height:600px;position:relative}.gallery-controls{display:flex;justify-content:flex-end;margin:8px 0}.gallery-task-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:30px}
 .circular-gallery{touch-action:pan-y}.circular-gallery:focus-visible{outline:3px solid #284f79}
 .app-dock{position:fixed;bottom:max(14px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:40;width:max-content;max-width:calc(100vw - 20px);pointer-events:none}
-.app-dock .dock-outer{margin:0;pointer-events:none}.app-dock .dock-panel{position:relative;left:auto;bottom:0;transform:none;pointer-events:auto;background:#1e232a;border:0;border-radius:28px;padding:8px 14px;gap:16px;box-shadow:0 12px 35px #14223820;align-items:center}
+.app-dock .dock-outer{margin:0;pointer-events:none}.app-dock .dock-panel{position:relative;left:auto;bottom:0;transform:none;pointer-events:auto;background:#1e232a;border:0;border-radius:28px;padding:6px 12px;gap:12px;box-shadow:0 12px 35px #14223820;align-items:center}
 .app-dock .dock-item{background:transparent;border:0;box-shadow:none;color:#eef4fa;border-radius:17px;flex-shrink:0;padding:0}
 .app-dock .dock-item.active,.app-dock .dock-item[aria-current=page]{background:#bfddfa;color:#132b44}
 .app-dock .dock-item:focus-visible{outline:3px solid #79b9f7;outline-offset:4px}
-.app-dock .dock-icon{flex-direction:column;gap:3px}.app-dock .dock-item-text{font-size:12px;line-height:1.2;white-space:nowrap}
+.app-dock .dock-icon,.app-dock .dock-icon>span{display:flex;align-items:center;justify-content:center}
 .app-dock .dock-item:hover,.app-dock .dock-item:active{transform:none;box-shadow:none}
-@media(max-width:480px){.gallery-stage{height:510px}.app-dock .dock-panel{gap:12px;padding:8px 10px}.task-card.flashcard{min-height:420px}.visual-task-art>svg{height:250px}}
-.app-dock .dock-item-text{font-size:14px}
+@media(max-width:480px){.gallery-stage{height:510px}.app-dock .dock-panel{gap:6px;padding:6px 10px}.task-card.flashcard{min-height:420px}.visual-task-art>svg{height:250px}}
 
 /* Inline React Bits Dock controls retain full labels and real actions. */
 .dock-inline{margin:18px 0 24px;display:block;position:relative;z-index:2}

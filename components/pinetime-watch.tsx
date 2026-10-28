@@ -4,6 +4,7 @@ import {Bluetooth,BluetoothConnected,Unplug,RefreshCw,Battery,Footprints,Heart,C
 import {apiOrigin,isNative} from '../lib/mobile-session';
 import {watchBluetooth,watchHistoryScope} from '../lib/watch-history-native';
 import {LocalWatchHistory} from './local-watch-history';
+import {CareInfo} from './care-info';
 import {PineTimeWatch,WATCH_READING_MAX_AGE,type Channel,type Reading,type WatchBluetooth,type WatchState} from '../lib/pinetime-watch';
 import {WatchStorage,type StoredWatchKind,type WatchStorageState} from '../lib/watch-storage';
 import {Button} from './ui/button';
@@ -113,7 +114,7 @@ export function OfflineWatch({onBack}:{onBack:()=>void}){
   const watch=usePineTimeWatch('offline-bluetooth-session');
   return <div className="care-shell"><main className="care-main">
     <div className="care-heading"><h1>Watch without internet</h1><Button variant="outline" onClick={onBack}>Back to app</Button></div>
-    <p role="status">No sign-in, demo data or cloud uploads. Live readings clear when you leave this screen. Optional on-phone history is separate from signed-in accounts and stays on this phone until you delete it.</p>
+    <p role="status">No sign-in or internet needed. Live readings clear when you leave. Optional history stays on this phone until you delete it.</p>
     <PineTimeWatchPanel watch={watch} showStorage={false}/>
   </main></div>;
 }
@@ -227,49 +228,46 @@ function WatchPanel({watch,storage,storageReady=false,onSaved,onManageData,showS
   const status = !supported ? 'Installed mobile app required' : state.phase === 'connecting' ? stages[state.connectionStage??'initializing'] :
     active ? 'Connected' : state.phase === 'disconnected' ? 'Connection lost' : state.phase === 'error' ? 'Connection failed' : 'Not connected';
   return <section className="care-watch" aria-label="PineTime Bluetooth connection">
-    <header className="care-watch-heading"><div><h2>PineTime</h2><span role="status">{active?<BluetoothConnected size={18}/>:<Bluetooth size={18}/>} {status}</span></div>
+    <header className="care-watch-heading"><div><div className="care-title-group"><h2>PineTime</h2><CareInfo title="Watch connection"><p>{tr('Keep your watch nearby and Bluetooth on. No internet needed. Disconnect to stop reconnection.')}</p><p>{tr('These choices and the selected watch are remembered separately on this device. Receiving resumes while the app is open. Disconnect or uncheck this option to stop automatic reconnection.')}</p><p>{watch.preferences.value.watch.backgroundHistory?'On-phone history and cloud saving are separate permissions.':storage.selected.consent?'Private uploads require internet access.':'Live readings are session only unless you enable on-phone history.'} Device readings are not medically verified.</p></CareInfo></div><span role="status">{active?<BluetoothConnected size={18}/>:<Bluetooth size={18}/>} {status}</span></div>
       {(active||pending)?<Button variant="outline" onClick={()=>void watch.disconnect()}><Unplug size={18}/>Disconnect</Button>:
         <Button disabled={!supported||!consent||pending} onClick={()=>void watch.connect()}><Bluetooth size={18}/>Connect watch</Button>}
     </header>
     <PreferenceError store={watch.preferences.store}/>
     <label className="care-check"><input type="checkbox" checked={consent} disabled={!supported} onChange={event=>watch.allow(event.target.checked)}/>{tr('Allow watch readings and automatic reconnection on this device')}</label>
-    <p className="care-private">{tr('These choices and the selected watch are remembered separately on this device. Receiving resumes while the app is open. Disconnect or uncheck this option to stop automatic reconnection.')}</p>
-    <p className="care-private">Bluetooth does not need Wi-Fi or mobile data. Keep Bluetooth on. By default, this app must stay open; compatible iPhones can opt into background sensing below. The watch must stay powered on; its screen can be dark.</p>
-    <label className="care-check"><input type="checkbox" checked={watch.preferences.value.watch.autoMeasure} disabled={!supported||!consent} onChange={event=>watch.preferences.store.updateWatch({autoMeasure:event.target.checked,...(!event.target.checked?{backgroundHistory:false}:{})})}/>{tr('Automatically measure heart rate every 15 minutes')}</label>
-    {!watch.preferences.value.watch.backgroundHistory&&<p className="care-private">{tr('Allow warm-up, then collect 10 seconds of usable readings, with a 60-second total limit. Requires compatible Mastro firmware and Bluetooth pairing. The phone app must stay open; the watch display may sleep. This is periodic observation, not continuous or medical monitoring.')}</p>}
+    <dl className="care-watch-readings">{([
+      ['heartRate','Recent heart rate','bpm',Heart],['steps','Watch step count','steps',Footprints],['battery','Battery','%',Battery],
+    ] as const).map(([channel,label,unit,Icon])=>{
+      const reading=active?state.readings[channel]:undefined;
+      const fresh=isFresh(channel,reading),visible=!!reading&&(channel!=='heartRate'||fresh);
+      return <div key={channel} data-channel={channel}><dt><Icon size={18}/>{label}</dt><dd>{visible?reading.value.toLocaleString():'—'} <small>{visible?unit:''}</small></dd>
+        {channel==='battery'&&reading&&fresh&&<progress className="care-watch-meter" aria-label="Watch battery level" value={reading.value} max={100}/>}
+        {state.refreshErrors?.[channel]&&<span role="status">Update failed</span>}
+        <span>{reading?<>{!fresh&&(channel==='heartRate'?'No recent reading · ':'Stale reading · ')}<time dateTime={new Date(reading.receivedAt).toISOString()} title={new Date(reading.receivedAt).toLocaleString()}>{fresh?'Received':'Last received'} {receivedAgo(reading.receivedAt)}</time></>:'No reading received'}</span></div>;
+    })}</dl>
+    <div className="care-option-info"><label className="care-check"><input type="checkbox" checked={watch.preferences.value.watch.autoMeasure} disabled={!supported||!consent} onChange={event=>watch.preferences.store.updateWatch({autoMeasure:event.target.checked,...(!event.target.checked?{backgroundHistory:false}:{})})}/>{tr('Automatically measure heart rate every 15 minutes')}</label><CareInfo title="Automatic measurements">{watch.preferences.value.watch.backgroundHistory?<p>Each session allows warm-up and ten seconds of readings, up to 60 seconds total. Periodic readings are not continuous or medical monitoring.</p>:<p>{tr('Allow warm-up, then collect 10 seconds of usable readings, with a 60-second total limit. Requires compatible Mastro firmware and Bluetooth pairing. The phone app must stay open; the watch display may sleep. This is periodic observation, not continuous or medical monitoring.')}</p>}</CareInfo></div>
+    {!watch.preferences.value.watch.backgroundHistory&&<p className="care-private">{tr('Keep the app open for readings. Your watch screen can sleep.')}</p>}
     {watch.history&&<>
-      {watch.preferences.value.watch.backgroundHistory&&<p className="care-private">Each session allows warm-up, then ten seconds of usable estimates, with a 60-second total limit. This is periodic observation, not continuous or medical monitoring.</p>}
-      <label className="care-check"><input type="checkbox" checked={watch.preferences.value.watch.backgroundHistory} disabled={!consent||!watch.preferences.value.watch.autoMeasure} onChange={event=>watch.preferences.store.updateWatch({backgroundHistory:event.target.checked})}/>{tr('Continue sensing when my iPhone locks and keep private on-phone history')}</label>
-      <p className="care-private">{tr('Requires Mastro 0.1.13 or newer. Keep Bluetooth on and the watch nearby. The watch runs the 15-minute schedule while iOS receives readings in the background. Force-quitting, system termination or losing Bluetooth can stop reception; reopen the app to resume.')}</p>
-      <p className="care-private">{tr('On-phone history keeps up to one observation per category every 30 seconds, with original receipt times and no automatic age-based deletion. Steps are recorded when read, not continuously in the background. Upload happens only with separate cloud-saving permission while the app is open. Deleting the app or losing this phone can lose local-only history.')}</p>
+      <div className="care-option-info"><label className="care-check"><input type="checkbox" checked={watch.preferences.value.watch.backgroundHistory} disabled={!consent||!watch.preferences.value.watch.autoMeasure} onChange={event=>watch.preferences.store.updateWatch({backgroundHistory:event.target.checked})}/>{tr('Continue sensing when my iPhone locks and keep private on-phone history')}</label><CareInfo title="Background readings"><p>{tr('Requires Mastro 0.1.13 or newer. Keep Bluetooth on and the watch nearby. The watch runs the 15-minute schedule while iOS receives readings in the background. Force-quitting, system termination or losing Bluetooth can stop reception; reopen the app to resume.')}</p><p>{tr('On-phone history keeps up to one observation per category every 30 seconds, with original receipt times and no automatic age-based deletion. Steps are recorded when read, not continuously in the background. Upload happens only with separate cloud-saving permission while the app is open. Deleting the app or losing this phone can lose local-only history.')}</p></CareInfo></div>
+      <p className="care-private">{tr('Requires Mastro 0.1.13+. If readings stop, reopen the app. Cloud saving needs separate permission.')}</p>
       {watch.preferences.value.watch.backgroundHistory&&<p role="status">{state.sensing?.periodic?tr('Background sensing is armed. You may lock your phone.'):tr('Keep Silver Bank open until background sensing is armed.')}</p>}
     </>}
     {watch.preferences.value.watch.autoMeasure&&<p role="status">{!active?'Automatic sensing waits for a watch connection.':({
       idle:'Waiting for the next sensing session.',
       queued:'Sensing request accepted; waiting for the watch.',
-      warming:'Heart sensor warming up; no usable window yet.',
+      warming:'Warming up the heart sensor…',
       collecting:'Collecting 10 seconds of usable readings.',
-      complete:'The watch completed its sensing window.',
-      'no-reading':'No usable 10-second reading window was obtained within 60 seconds.',
+      complete:'Measurement complete.',
+      'no-reading':'No usable reading. Try again.',
       cancelled:'Sensing session stopped.',
       unavailable:'Automatic sensing is unavailable.',
     }[state.sensing?.phase??'idle'])}</p>}
-    {watch.preferences.value.watch.autoMeasure&&active&&state.sensing?.nextAt&&<p>Next sensing attempt: {new Date(state.sensing.nextAt).toLocaleTimeString()}. Gaps between sessions are expected.</p>}
+    {watch.preferences.value.watch.autoMeasure&&active&&state.sensing?.nextAt&&<p>Next reading: {new Date(state.sensing.nextAt).toLocaleTimeString()}.</p>}
     {state.sensing?.error&&<p className="error" role="alert">{state.sensing.error}</p>}
     {watch.preferences.value.watch.autoMeasure&&state.sensing?.phase==='unavailable'&&<Button variant="outline" disabled={!active||pending} onClick={()=>void watch.retrySensing()}>Retry automatic sensing</Button>}
     {state.device&&<p>{state.device.name||'Selected watch'}</p>}
     {(error||state.error)&&<p className="error" role="alert">{error||state.error}</p>}
     {state.phase==='disconnected'&&<Button variant="outline" disabled={!consent||pending} onClick={()=>void watch.reconnect()}><RefreshCw size={18}/>Reconnect</Button>}
-    <dl className="care-watch-readings">{([
-      ['battery','Battery','%',Battery],['steps','Watch step count','steps',Footprints],['heartRate','Recent heart rate','bpm',Heart],
-    ] as const).map(([channel,label,unit,Icon])=>{
-      const reading=active?state.readings[channel]:undefined;
-      const fresh=isFresh(channel,reading),visible=!!reading&&(channel!=='heartRate'||fresh);
-      return <div key={channel}><dt><Icon size={18}/>{label}</dt><dd>{visible?reading.value.toLocaleString():'—'} <small>{visible?unit:''}</small></dd>
-        {channel==='battery'&&reading&&fresh&&<progress className="care-watch-meter" aria-label="Watch battery level" value={reading.value} max={100}/>}
-        {state.refreshErrors?.[channel]&&<span role="status">Update failed</span>}
-        <span>{reading?<>{!fresh&&(channel==='heartRate'?'No recent reading · ':'Stale reading · ')}<time dateTime={new Date(reading.receivedAt).toISOString()} title={new Date(reading.receivedAt).toLocaleString()}>{fresh?'Received':'Last received'} {receivedAgo(reading.receivedAt)}</time></>:'No reading received'}</span></div>;
-    })}</dl>
+
     <div className="care-watch-goal">
       <label htmlFor="watch-step-goal"><Footprints size={18}/>Step-count goal <small>{tr('Remembered on this device')}</small></label>
       <input id="watch-step-goal" type="number" inputMode="numeric" min="1" max="100000" step="1" placeholder="Not set" value={goal} disabled={!consent||!supported} aria-invalid={goal!==''&&!validGoal} aria-describedby={goal!==''&&!validGoal?'watch-goal-error':undefined} onChange={event=>watch.preferences.store.updateWatch({goal:event.target.value})}/>
@@ -277,10 +275,9 @@ function WatchPanel({watch,storage,storageReady=false,onSaved,onManageData,showS
       {progress!==undefined&&steps&&<div className="care-watch-goal-progress"><progress className="care-watch-meter" aria-label="Step-count goal progress" value={Math.min(steps.value,goalValue)} max={goalValue}/><span>{steps.value.toLocaleString()} / {goalValue.toLocaleString()} steps</span><output aria-label="Step-count goal percentage">{progress}%</output></div>}
     </div>
     <section className="care-watch-summary" aria-label="Watch reading summary"><h3>At a glance</h3><p>{summary}</p></section>
-    {showStorage&&<section className="care-watch-storage" aria-label="Private watch storage"><h3><ShieldCheck size={18}/>Private account storage</h3>
-      {!storageReady&&<p>Live Bluetooth readings are available without loading your account records. Internet access and Care privacy setup are needed to enable account storage.</p>}
+    {showStorage&&<section className="care-watch-storage" aria-label="Private watch storage"><div className="care-section-heading"><h3><ShieldCheck size={18}/>Private account storage</h3><CareInfo title="Private account storage"><p>{tr('Tap Start saving to upload while the app is open and online. Stop saving turns off uploads.')}</p><p>Stopping uploads keeps existing records. Watch readings do not affect Time Credits or recommendations.</p></CareInfo></div>
+      {!storageReady&&<p>To save online, connect to the internet and complete Care privacy setup.</p>}
       <label className="care-check"><input type="checkbox" checked={storage.selected.consent} disabled={!storage.selected.consent&&(!storage.available||!storageReady)} onChange={event=>storage.choose('consent',event.target.checked)}/>Save selected watch readings to my private Silver Bank account</label>
-      <p className="care-private">{tr('After you tap Start saving, these categories and permission are remembered. Uploads resume for this account while the app is open and connected. Stop saving turns off automatic uploads.')}</p>
       <div className="care-watch-categories">{(['steps','heartRate'] as const).map(kind=><label className="care-check" key={kind}><input type="checkbox" checked={storage.selected[kind]} disabled={!storage.selected.consent||!!storage.state.registered||storage.state.phase==='enrolling'} onChange={event=>storage.choose(kind,event.target.checked)}/>{kind==='steps'?'Save step-counter observations':'Save recent heart-rate observations'}</label>)}</div>
       <p role="status">{storage.state.phase==='enrolling'?'Registering private connection':storage.state.phase==='pending'?'Waiting to sync':storage.state.phase==='saved'?'Saved to your private account':storage.state.phase==='error'?'Sync failed':storage.state.phase==='ready'?'Waiting for watch readings':'Not saving watch readings'}</p>
       {storage.state.lastSavedAt&&<p>Last confirmed {new Date(storage.state.lastSavedAt).toLocaleTimeString()}</p>}
@@ -292,9 +289,7 @@ function WatchPanel({watch,storage,storageReady=false,onSaved,onManageData,showS
         {!storage.state.registered&&storage.state.phase!=='enrolling'&&<Button disabled={!storageReady||!storage.available||!storage.selected.consent||(!storage.selected.steps&&!storage.selected.heartRate)||(!active&&!watch.history)} onClick={storage.start}><CloudUpload size={18}/>Start saving</Button>}
         {onManageData&&<Button variant="ghost" onClick={onManageData}>Manage saved data</Button>}
       </div>
-      <p className="care-private">Stopping saves does not delete existing private records. Raw readings do not change Time Credits or activity recommendations.</p>
     </section>}
     {watch.history&&<LocalWatchHistory key={watch.historyScope} repository={watch.history} scope={watch.historyScope} preferences={watch.preferences.store}/>}
-    <p className="care-private">{watch.preferences.value.watch.backgroundHistory?'On-phone history and cloud saving are separate permissions.':storage.selected.consent?'Private uploads require internet access.':'Live readings are session only unless you enable on-phone history.'} Device readings are not medically verified.</p>
   </section>;
 }

@@ -1,14 +1,16 @@
+import {WELCOME_CREDIT_SECONDS,WELCOME_CREDIT_DESCRIPTION} from './credit-policy.mjs';
 export function createAppDemo(){
  const now=Math.floor(Date.now()/1000);
  const user={id:'local-demo-member',name:'Demo Member',email:'demo@example.invalid',account_type:'individual',role:'member',language:'en',location:'Hong Kong',skills:'Calligraphy and Cantonese storytelling',preferences:'Teaching',contributed:0,received:0,completed_tasks:0,reviews:[]};
- const balance={available:0,reserved:0};
+ const balance={available:WELCOME_CREDIT_SECONDS,reserved:0,total:WELCOME_CREDIT_SECONDS};
+ const welcome={id:'demo-welcome-credit',source_id:null,destination_id:user.id,task_id:null,type:'onboarding',amount:WELCOME_CREDIT_SECONDS,status:'posted',metadata:WELCOME_CREDIT_DESCRIPTION,created_at:now};
  const categories=[{id:'teaching',name:'Teaching'},{id:'companionship',name:'Companionship'}];
  let records:any[]=[];
  let preferences:{activity:string[];notifications:number;bank_consent:number;reminder_hour:number|null}={activity:[],notifications:1,bank_consent:0,reminder_hour:null};
  let matching:{mode:string;days:string;timezone:string;max_minutes:number|null}={mode:'in_person',days:'["Mon","Thu"]',timezone:'Asia/Hong_Kong',max_minutes:45};
  const measurements=[1,3,6,12,30,54,96,144].flatMap((hours,index)=>[
-  {id:'sample-heart-'+index,device_name:'Sample PineTime',kind:'heart_rate',value:[72,78,84,69,76,81,74,70][index],unit:'bpm',measured_at:now-hours*3600,timestamp_source:'phone_received',demo:true},
-  {id:'sample-steps-'+index,device_name:'Sample PineTime',kind:'steps',value:[240,4150,3200,1650,5800,4700,6200,3900][index],unit:'steps',measured_at:now-hours*3600,timestamp_source:'phone_received',demo:true},
+  {id:'sample-heart-'+index,device_id:'sample-pinetime',device_name:'Sample PineTime',kind:'heart_rate',value:[72,78,84,69,76,81,74,70][index],unit:'bpm',measured_at:now-hours*3600,timestamp_source:'phone_received',demo:true},
+  {id:'sample-steps-'+index,device_id:'sample-pinetime',device_name:'Sample PineTime',kind:'steps',value:[240,4150,3200,1650,5800,4700,6200,3900][index],unit:'steps',measured_at:now-hours*3600,timestamp_source:'phone_received',demo:true},
  ]);
  const talent=()=>({skills:user.skills,categories:user.preferences.split(',').map(value=>value.trim()),matching});
  return async(path:string,data?:any)=>{
@@ -37,7 +39,7 @@ export function createAppDemo(){
   if(endpoint==='care/family')return {contacts:[]};
   if(endpoint==='talent-profile')return structuredClone(talent());
   if(endpoint==='matching-preferences')return structuredClone(matching);
-  if(endpoint==='ledger')return {balance,entries:[]};
+  if(endpoint==='ledger')return structuredClone({balance,entries:[welcome]});
   if(endpoint==='notifications/count')return {unread:0};
   if(endpoint==='programs')return {programs:[],enrollments:[],support:[],badges:[],matches:[]};
   if(['tasks','recommendations','notifications'].includes(endpoint))return [];

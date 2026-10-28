@@ -43,18 +43,18 @@ try{
  await unavailable.getByRole('button',{name:'Use watch without internet',exact:true}).click();
  await unavailable.getByRole('heading',{name:'Watch without internet',exact:true}).waitFor();
  await expect(unavailable.getByRole('region',{name:'Private watch storage'})).toHaveCount(0);
- await expect(unavailable.getByText('No sign-in, demo data or cloud uploads.',{exact:false})).toBeVisible();
+ await expect(unavailable.getByText('No sign-in or internet needed. Live readings clear when you leave.',{exact:false})).toBeVisible();
  assert.deepEqual(demoNetwork,[],'Opening Bluetooth-only mode must not request account or upload data');
  await unavailable.getByRole('button',{name:'Back to app',exact:true}).click();
  await unavailable.getByRole('button',{name:'Sign in',exact:true}).waitFor();
  await unavailable.getByRole('button',{name:'Try demo without signing in',exact:true}).click();
  await unavailable.getByRole('heading',{name:'Hello, Demo Member',exact:true}).waitFor();
- for(const [tab,heading] of [['Home','Hi, Demo Member'],['Community','Community tasks'],['Time Bank','My Time Bank'],['Profile','My profile']]){
+ for(const [tab,heading] of [['Home','Hi, Demo Member'],['Community','Community'],['Time Bank','My Time Bank'],['Profile','My profile']]){
   await unavailable.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:tab,exact:true}).click();
   await expect(unavailable.getByRole('heading',{name:heading,exact:true})).toBeVisible();
   assert.deepEqual(startupErrors,[],`Built-in demo ${tab} must not crash`);
  }
- await unavailable.getByRole('button',{name:'Programs & Skill Badges',exact:true}).click();
+ await unavailable.getByRole('button',{name:'Programs & badges',exact:true}).click();
  await expect(unavailable.getByText('No programs have been published yet.',{exact:true})).toBeVisible();
  await expect(unavailable.getByRole('heading',{name:'My Skill Badges',exact:true})).toBeVisible();
  assert.deepEqual(startupErrors,[],'Built-in demo programs must not crash');
@@ -68,7 +68,7 @@ try{
  await unavailable.getByLabel('How are you feeling? (optional)',{exact:true}).fill('Resting after a short walk');
  await unavailable.getByRole('button',{name:'Review my record',exact:true}).click();
  await unavailable.getByRole('button',{name:'Confirm and save privately',exact:true}).click();
- await unavailable.getByRole('heading',{name:'Health Timeline',exact:true}).waitFor();
+ await unavailable.getByRole('heading',{name:'Timeline',level:1,exact:true}).waitFor();
  await expect(unavailable.locator('.care-record')).toHaveCount(1);
  await expect(unavailable.locator('.care-record')).toContainText('Resting after a short walk');
  await chooseCare(unavailable,'My Health');
@@ -95,7 +95,10 @@ try{
  const demo=await browser.newPage({viewport:{width:375,height:812},locale:'en-US',reducedMotion:'reduce'});
  const demoErrors=[];demo.on('pageerror',error=>demoErrors.push(error.message));
  await demo.goto(demoBase+'/#care/overview');
+ await expect(demo.locator('.demo-badge')).toContainText('Sample data');
+ await demo.getByRole('button',{name:'About Demo',exact:true}).click();
  await demo.getByText('Demo preview: sample data only. Changes stay in memory. No real account, booking or caregiver notification.',{exact:true}).waitFor();
+ await demo.getByRole('button',{name:'Close information',exact:true}).click();
  assert.equal(await demo.getByRole('heading',{name:'Set up your Time Bank'}).count(),0);
  await demo.getByRole('radio',{name:'I am resting',exact:true}).check();
  await demo.getByRole('button',{name:'Confirm and save privately'}).click();
@@ -210,6 +213,7 @@ try{
    if(endpoint==='setup')body={configured:true};
    else if(endpoint==='me')body=me;
    else if(endpoint==='notifications/count')body={unread:0};
+   else if(endpoint==='care/email-settings')body={ready:false,email:'navigation@example.invalid',guest:false,verified:false,enabled:false,sections:['checkins','heart','notes'],nextDelivery:0,lastDelivery:null};
   else if(endpoint==='care')body={records,measurements:[],devices:[],summaries:[],received:[],shares:[],audit:[],preferences:{activity:[],notifications:0,bank_consent:0,reminder_hour:null,ai_consented_at:1}};
    else if(endpoint==='admin')body={tasks:[],users:[],ledger:[],audit:[],settings:[],categories:[]};
    else if(endpoint==='verification/review-queue')body={policy:{minimumAge:18,reviewDays:365,jurisdictions:[]},individuals:[],organizations:[]};
@@ -309,13 +313,13 @@ try{
    await page.getByRole('button',{name:'Care settings',exact:true}).click();
     assert.equal(new URL(page.url()).hash,'#care/settings');
     assert.deepEqual(errors,[]);
-   await page.getByRole('heading',{name:'Your privacy and preferences'}).waitFor();
+   await page.getByRole('heading',{name:'Privacy and preferences',exact:true}).waitFor();
    assert.equal(await dock.getByRole('button',{name:'Care',exact:true}).getAttribute('aria-current'),'page');
    await dock.getByRole('button',{name:'Time Bank',exact:true}).click();
    await page.getByRole('heading',{name:'Your time activity'}).waitFor();
    assert.equal(await dock.getByRole('button',{name:'Time Bank',exact:true}).getAttribute('aria-current'),'page');
    await dock.getByRole('button',{name:'Community',exact:true}).click();
-   await page.getByRole('heading',{name:'Community tasks'}).waitFor();
+   await page.getByRole('heading',{name:'Community'}).waitFor();
   await page.getByRole('button',{name:'My talents',exact:true}).click();
   const talentScreen=page.locator('.talent-workspace');
   await talentScreen.getByLabel('Skills and experience you can share',{exact:true}).waitFor();
@@ -350,11 +354,11 @@ try{
   const recommendationRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/api/recommendations');
   await page.getByRole('button',{name:'Find matching opportunities'}).click();
   await recommendationRequest;
-  await page.getByRole('tab',{name:'Recommended for you',exact:true}).waitFor();
-  assert.equal(await page.getByRole('tab',{name:'Recommended for you',exact:true}).getAttribute('aria-selected'),'true');
+  await page.getByRole('tab',{name:'For you',exact:true}).waitFor();
+  assert.equal(await page.getByRole('tab',{name:'For you',exact:true}).getAttribute('aria-selected'),'true');
   assert.equal(requests.includes('recommendations'),true);
   assert.equal(requests.some(endpoint=>endpoint==='tasks/accept'||endpoint==='care/share'),false);
-   await page.getByRole('button',{name:'Ask your community',exact:true}).click();
+   await page.getByRole('button',{name:'Ask for help',exact:true}).click();
    await page.getByRole('button',{name:'Post request',exact:true}).waitFor();
    assert.equal(new URL(page.url()).hash,'#create');
    assert.equal(await dock.getByRole('button',{name:'Community',exact:true}).getAttribute('aria-current'),'page');
@@ -365,7 +369,8 @@ try{
    assert.equal(await dock.getByRole('button',{name:'Care',exact:true}).getAttribute('aria-current'),'page');
    assert.equal(requests.some(endpoint=>endpoint==='care/setup'||endpoint==='care/connect'||endpoint==='care-device'),false);
    await page.goto(base+'/#tasks');
-   await page.getByRole('tab',{name:'Helping',exact:true}).click();
+   await page.getByRole('tab',{name:'My activity',exact:true}).click();
+   await page.getByRole('button',{name:'Helping',exact:true}).click();
    await page.getByText('Filter requests',{exact:true}).click();
    await page.locator('.filter').getByRole('button',{name:'All categories',exact:true}).click();
    await page.getByRole('option',{name:'Teaching',exact:true}).click();
@@ -376,13 +381,14 @@ try{
    await page.getByRole('button',{name:'Apply filters',exact:true}).click();
    await expect.poll(()=>taskQueries.at(-1)?.get('maxMinutes')).toBe('45');
    await page.goto(base+'/');
-   await expect(page.getByRole('tab',{name:'Helping',exact:true})).toHaveAttribute('aria-selected','true');
+   await expect(page.getByRole('tab',{name:'My activity',exact:true})).toHaveAttribute('aria-selected','true');
+   await expect(page.getByRole('button',{name:'Helping',exact:true})).toHaveAttribute('aria-pressed','true');
    await page.getByText('Filter requests',{exact:true}).click();
    await expect(page.locator('.filter select[name="category"]')).toHaveValue('teaching');
    await expect(page.locator('.filter select[name="mode"]')).toHaveValue('remote');
    await expect(page.getByLabel('Maximum minutes',{exact:true})).toHaveValue('45');
    await expect(page.locator('.filter input[name="date"]')).toHaveValue('2026-10-16');
-   await page.getByRole('tab',{name:'Requested',exact:true}).click();
+   await page.getByRole('button',{name:'Requested',exact:true}).click();
    await expect.poll(()=>taskQueries.at(-1)?.get('view')).toBe('requested');
    assert.equal(taskQueries.at(-1).get('category'),'teaching');
    await dock.getByRole('button',{name:'Home',exact:true}).click();
@@ -410,7 +416,7 @@ try{
    await page.goto(base+'/');
    await expect(page.getByRole('searchbox',{name:'Search requests'})).toHaveValue('');
    await dock.getByRole('button',{name:'Community',exact:true}).click();
-   await expect(page.getByRole('tab',{name:'Give Time',exact:true})).toHaveAttribute('aria-selected','true');
+   await expect(page.getByRole('tab',{name:'Browse',exact:true})).toHaveAttribute('aria-selected','true');
    await page.getByText('Filter requests',{exact:true}).click();
    await expect(page.locator('.filter select[name="category"]')).toHaveValue('');
    me.user.id='navigation-individual';me.user.role='admin';

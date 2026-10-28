@@ -21,7 +21,7 @@ if (!["sites", "cloudflare"].includes(hostingTarget)) {
 const independentHosting = hostingTarget === "cloudflare";
 
 const localBindingConfig = {
-  main: "vinext/server/fetch-handler",
+  main: "./worker.ts",
   compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [

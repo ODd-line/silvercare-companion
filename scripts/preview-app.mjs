@@ -2,14 +2,16 @@ import {existsSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {preview} from 'vite';
+import {WELCOME_CREDIT_SECONDS,WELCOME_CREDIT_DESCRIPTION} from '../lib/credit-policy.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
 export async function startAppDemo({port=3042}={}){
  if(!existsSync(path.join(root,'mobile-www/index.html')))throw new Error('Run npm run mobile:build before starting the demo.');
- const user={id:'demo-member',name:'Demo Member',email:'demo@example.invalid',account_type:'individual',role:'member',language:'en',location:'Hong Kong',skills:'Calligraphy and Cantonese storytelling',preferences:'Teaching',contributed:0,received:0,completed_tasks:0};
+ const user={id:'demo-member',name:'Demo Member',email:'demo@example.invalid',account_type:'individual',role:'member',language:'en',location:'Hong Kong',skills:'Calligraphy and Cantonese storytelling',preferences:'Teaching',contributed:0,received:0,completed_tasks:0,reviews:[]};
  const categories=[{id:'teaching',name:'Teaching'},{id:'companionship',name:'Companionship'},{id:'technology',name:'Technology assistance'}];
- const balance={available:0,reserved:0};
+ const balance={available:WELCOME_CREDIT_SECONDS,reserved:0,total:WELCOME_CREDIT_SECONDS};
+ const welcome={id:'demo-welcome-credit',source_id:null,destination_id:user.id,task_id:null,type:'onboarding',amount:WELCOME_CREDIT_SECONDS,status:'posted',metadata:WELCOME_CREDIT_DESCRIPTION,created_at:Math.floor(Date.now()/1000)};
  let matching={mode:'in_person',days:'["Mon","Thu"]',timezone:'Asia/Hong_Kong',max_minutes:45};
  let records=[];
  const sampleNow=Math.floor(Date.now()/1000);
@@ -19,6 +21,8 @@ export async function startAppDemo({port=3042}={}){
   {id:'demo-steps-'+index,device_id:'demo-watch',device_name:'Sample PineTime',kind:'steps',value:[240,4150,3200,1650,5800,4700,6200,3900][index],unit:'steps',measured_at:sampleNow-hours*3600,timestamp_source:'phone_received',demo:true},
  ]);
  let preferences={activity:[],notifications:1,bank_consent:0,reminder_hour:null};
+ let emailSections=['checkins','heart','notes'];
+ const emailSettings=()=>({ready:false,email:user.email,guest:false,verified:false,enabled:false,sections:emailSections,nextDelivery:0,lastDelivery:null});
  const talent=()=>({skills:user.skills,categories:user.preferences.split(',').map(value=>value.trim()).filter(Boolean),matching});
  return preview({configFile:false,root,build:{outDir:'mobile-www'},preview:{host:'127.0.0.1',port,strictPort:true},plugins:[{
   name:'local-app-demo',
@@ -52,6 +56,10 @@ export async function startAppDemo({port=3042}={}){
       preferences={...preferences,activity:body.activity||[],notifications:body.notifications?1:0,bank_consent:body.bankConsent?1:0,reminder_hour:body.reminderHour===''?null:Number(body.reminderHour)};
       return reply({ok:true});
      }
+     if(endpoint==='care/email-settings'){
+      if(body.enabled||!Array.isArray(body.sections)||!body.sections.length||body.sections.some(s=>!['checkins','heart','notes'].includes(s)))return reply({error:'This preview cannot send emails. Choose report sections and leave delivery off.'},400);
+      emailSections=[...new Set(body.sections)];return reply(emailSettings());
+     }
      if(endpoint==='care/delete-record'){records=records.filter(record=>record.id!==body.id);return reply({ok:true});}
      return reply({error:'Unavailable in this demo. No account, booking, sharing or notification was changed.'},409);
     }
@@ -61,8 +69,10 @@ export async function startAppDemo({port=3042}={}){
     if(endpoint==='matching-preferences')return reply(matching);
     if(endpoint==='care')return reply({records,measurements,devices:[],summaries:[],received:[],shares:[],audit:[],preferences});
     if(endpoint==='care/family')return reply({contacts:[]});
+    if(endpoint==='care/email-settings')return reply(emailSettings());
+    if(endpoint==='care/email-preview')return reply({label:'Sample report · 19–25 October 2026',charts:[['heart','Daily heart-rate average','bpm',100,[72,76,74,70,73,null,null]],['checkins','Your daily check-ins','check-in',1,[1,1,1,1,1,0,0]],['notes','Health notes by day','notes',2,[0,1,0,2,0,0,0]]].filter(([id])=>emailSections.includes(id)).map(([id,title,unit,maximum,values])=>({id,title,unit,maximum,days:values.map((value,i)=>({date:'2026-10-'+(19+i),label:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i],value,samples:id==='heart'?(value===null?0:1):value}))})),metrics:[...(emailSections.includes('checkins')?[{label:'Check-in days',value:'5 of 7 days'}]:[]),...(emailSections.includes('heart')?[{label:'Average heart rate',value:'73 bpm'},{label:'Saved heart-rate readings',value:'5'},{label:'Recorded heart-rate range',value:'70–76 bpm'}]:[]),...(emailSections.includes('notes')?[{label:'Health notes saved',value:'3'}]:[])]});
     if(endpoint==='notifications/count')return reply({unread:0});
-    if(endpoint==='ledger')return reply({balance,entries:[]});
+    if(endpoint==='ledger')return reply({balance,entries:[welcome]});
     if(['tasks','programs','recommendations','notifications'].includes(endpoint))return reply([]);
     return reply({error:'This screen is unavailable in the local demo.'},404);
    }catch{return reply({error:'Invalid local demo request.'},400);}
@@ -71,8 +81,10 @@ export async function startAppDemo({port=3042}={}){
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- const server=await startAppDemo();
+ const portIndex=process.argv.indexOf('--port');
+ const port=portIndex<0?3042:Number(process.argv[portIndex+1]);
+ const server=await startAppDemo({port});
  server.printUrls();
- console.log('Sample-data app preview: http://localhost:3042/#care/overview');
+ console.log(`Sample-data app preview: http://localhost:${port}/#care/overview`);
  console.log('Setup skipped only in this loopback demo. Changes stay in memory; no real account or delivery.');
 }

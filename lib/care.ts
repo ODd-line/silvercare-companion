@@ -1,4 +1,6 @@
 import {z} from 'zod';
+import {env} from 'cloudflare:workers';
+import {emailAction,type EmailEnv} from './care-email-core';
 import {careChat} from './care-chat';
 import {database,query,one,rows,run,fail,clean,required,whole,uid,hash,secret} from './bank';
 const activityOptions=['lower-intensity','shorter','remote','nearby'];
@@ -49,6 +51,7 @@ export async function careRoute(u:any,action:string|undefined,b:any,post:boolean
  }
  if(action==='setup'&&post){if(b.consent!==true)fail('Confirm that you want to store your health information in Silver Care.');await database().batch([query('INSERT INTO care_preferences(user_id,consented_at) VALUES(?,unixepoch()) ON CONFLICT(user_id) DO NOTHING',u.id),audit(u.id,'care_setup')]);return {ok:true};}
  if(!prefs)fail('Complete Silver Care privacy setup first.',428);
+ if(action?.startsWith('email-'))return emailAction(env as unknown as EmailEnv,u,action,b,post);
  if(action==='conversations'&&!post)return {conversations:await rows('SELECT id,title,version,updated_at FROM care_conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 100',u.id)};
  if(action==='conversation'&&!post){const c=await owner('care_conversations',b.id,u);return {...c,messages:JSON.parse(c.messages)};}
  if(action==='family'&&!post)return {contacts:await rows('SELECT * FROM care_family WHERE user_id=? ORDER BY name',u.id)};
@@ -96,7 +99,7 @@ export async function careRoute(u:any,action:string|undefined,b:any,post:boolean
  if(action==='disconnect'){await owner('care_devices',b.id,u);await database().batch([query('UPDATE care_devices SET active=0,token_hash=NULL WHERE id=? AND user_id=?',b.id,u.id),audit(u.id,'device_disconnected',b.id)]);return {ok:true};}
  if(action==='device-permissions'){const d=await owner('care_devices',b.id,u);if(!d.active)fail('Reconnect this device to change permissions.');const permissions=list(b.permissions,Object.keys(metrics));const token=secret();await database().batch([query('UPDATE care_devices SET permissions=?,token_hash=? WHERE id=? AND user_id=?',JSON.stringify(permissions),await hash(token),d.id,u.id),audit(u.id,'device_permissions_changed',d.id)]);return {token};}
  if(action==='erase'){
-  if(b.confirmation!=='DELETE MY CARE DATA')fail('Type DELETE MY CARE DATA to confirm.');await database().batch([query('DELETE FROM care_shares WHERE user_id=? OR recipient_id=?',u.id,u.id),query('DELETE FROM care_measurements WHERE user_id=?',u.id),query('DELETE FROM care_devices WHERE user_id=?',u.id),query('DELETE FROM care_summaries WHERE user_id=?',u.id),query('DELETE FROM care_records WHERE user_id=?',u.id),query('DELETE FROM care_conversations WHERE user_id=?',u.id),query('DELETE FROM care_family WHERE user_id=?',u.id),query('DELETE FROM care_audit WHERE user_id=?',u.id),query('DELETE FROM care_preferences WHERE user_id=?',u.id)]);return {ok:true};
+  if(b.confirmation!=='DELETE MY CARE DATA')fail('Type DELETE MY CARE DATA to confirm.');await database().batch([query('DELETE FROM care_shares WHERE user_id=? OR recipient_id=?',u.id,u.id),query('DELETE FROM care_measurements WHERE user_id=?',u.id),query('DELETE FROM care_devices WHERE user_id=?',u.id),query('DELETE FROM care_summaries WHERE user_id=?',u.id),query('DELETE FROM care_records WHERE user_id=?',u.id),query('DELETE FROM care_conversations WHERE user_id=?',u.id),query('DELETE FROM care_family WHERE user_id=?',u.id),query('DELETE FROM care_audit WHERE user_id=?',u.id),query('DELETE FROM care_email_deliveries WHERE user_id=?',u.id),query('DELETE FROM care_email_challenges WHERE user_id=?',u.id),query('DELETE FROM care_email_preferences WHERE user_id=?',u.id),query('DELETE FROM care_preferences WHERE user_id=?',u.id)]);return {ok:true};
  }
  fail('Not found.',404);
 }

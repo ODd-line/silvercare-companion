@@ -29,3 +29,14 @@ test('Editing a demo note updates the original and rejects stale or missing reco
  await assert.rejects(api('care/record',{...body,id:created.id,version:records[0].version}),/not found/);
  assert.equal((await api('care')).records.length,0);
 });
+
+
+test('Demo welcome balance matches its single ledger entry',async()=>{
+ const api=createAppDemo();
+ assert.equal((await api('me')).balance.available,3600);
+ const ledger=await api('ledger');
+ assert.equal(ledger.entries.length,1);
+ assert.equal(ledger.entries[0].type,'onboarding');
+ assert.equal(ledger.entries[0].amount,3600);
+ assert.equal((await api('ledger')).entries.length,1);
+});

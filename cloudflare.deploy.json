@@ -5,6 +5,17 @@
   "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "routes": [
+    {"pattern": "silvercare.care", "custom_domain": true, "zone_id": "a2d375225734ba98cae7ee7c142d195e"},
+    {"pattern": "www.silvercare.care", "custom_domain": true, "zone_id": "a2d375225734ba98cae7ee7c142d195e"}
+  ],
+  "main": "./worker.ts",
+  "triggers": {"crons": ["0 * * * *"]},
+  "vars": {
+    "CARE_EMAIL_ENABLED": "true",
+    "CARE_EMAIL_FROM": "SilverCare <updates@silvercare.care>",
+    "CARE_EMAIL_APP_URL": "https://silver-bank.s20181076-cfd.workers.dev"
+  },
   "d1_databases": [
     {
       "binding": "DB",

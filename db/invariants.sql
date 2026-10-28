@@ -80,12 +80,12 @@ CREATE TRIGGER task_events_no_update BEFORE UPDATE ON task_events BEGIN SELECT R
 CREATE TRIGGER task_events_no_delete BEFORE DELETE ON task_events BEGIN SELECT RAISE(ABORT,'immutable_task_history'); END;
 
 --> statement-breakpoint
-CREATE TRIGGER verified_starter AFTER UPDATE OF status ON identity_verifications
- WHEN NEW.status='verified' AND OLD.status<>'verified' AND NEW.age_eligible=1 AND NEW.duplicate_status='clear'
- AND (SELECT account_type FROM users WHERE id=NEW.user_id)='individual'
- AND CAST((SELECT value FROM settings WHERE id='onboarding_seconds') AS INTEGER)>0
- AND NOT EXISTS(SELECT 1 FROM ledger WHERE destination_id=NEW.user_id AND type='onboarding')
- BEGIN INSERT INTO ledger(id,destination_id,amount,type,metadata) VALUES(lower(hex(randomblob(16))),NEW.user_id,CAST((SELECT value FROM settings WHERE id='onboarding_seconds') AS INTEGER),'onboarding','One-time credit after manual identity verification'); END;
+CREATE TRIGGER signup_starter AFTER INSERT ON users
+WHEN NEW.account_type='individual' AND NEW.role='member'
+BEGIN
+ INSERT INTO ledger(id,destination_id,amount,type,metadata)
+ VALUES(lower(hex(randomblob(16))),NEW.id,3600,'onboarding','One-time one-hour welcome credit at sign-up');
+END;
 --> statement-breakpoint
 CREATE TRIGGER verification_approval_guard BEFORE UPDATE ON identity_verifications
  WHEN NEW.status='verified'
@@ -108,7 +108,11 @@ CREATE TRIGGER pending_identity_insert BEFORE INSERT ON identity_verifications W
 --> statement-breakpoint
 CREATE TRIGGER pending_organization_insert BEFORE INSERT ON organizations WHEN NEW.status='verified' BEGIN SELECT RAISE(ABORT,'review_existing_application_first'); END;
 --> statement-breakpoint
-CREATE TRIGGER verified_onboarding_only BEFORE INSERT ON ledger WHEN NEW.type='onboarding' BEGIN SELECT RAISE(ABORT,'identity_verification_required') WHERE NOT EXISTS(SELECT 1 FROM identity_verifications v JOIN users u ON u.id=v.user_id WHERE v.user_id=NEW.destination_id AND u.account_type='individual' AND v.status='verified' AND v.age_eligible=1 AND v.duplicate_status='clear'); END;
+CREATE TRIGGER signup_onboarding_guard BEFORE INSERT ON ledger WHEN NEW.type='onboarding'
+BEGIN
+ SELECT RAISE(ABORT,'invalid_signup_credit') WHERE NEW.amount<>3600 OR NEW.source_id IS NOT NULL OR NEW.destination_id IS NULL OR NEW.task_id IS NOT NULL
+ OR NOT EXISTS(SELECT 1 FROM users WHERE id=NEW.destination_id AND account_type='individual' AND role='member');
+END;
 --> statement-breakpoint
 CREATE TRIGGER identity_review_requested AFTER INSERT ON identity_verifications BEGIN
  INSERT INTO notifications(id,user_id,text) SELECT lower(hex(randomblob(16))),id,'A member has requested manual verification.' FROM users WHERE role='admin' AND suspended=0;
